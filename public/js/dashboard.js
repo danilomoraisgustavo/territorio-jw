@@ -1,22 +1,16 @@
 // dashboard.js
 
+// Defina as variáveis no escopo global
 let map;
 let drawingManager;
-let territoryShape = null;
-let lotShapes = [];
-let blockShapes = [];
+let territoryShape = null; // Armazena o polígono do território principal
+let lotShapes = []; // Armazena os polígonos dos lotes
 let isDrawingTerritory = false;
 let isDrawingLots = false;
-let isEditing = false;
-let isDeleting = false;
-let isDrawingBlock = false;
-let selectedShape = null;
+let isEditing = false; // Estado para controle de edição
+let isDeleting = false; // Estado para controle de apagar
 
-let currentAngleDeg = 0;
-let currentBlockPolygon = null;
-let currentLotWidthMeters = 10;
-let currentLotHeightMeters = 20;
-
+// Função initMap no escopo global
 function initMap() {
     console.log('Inicializando o mapa');
     map = new google.maps.Map(document.getElementById('map'), {
@@ -24,6 +18,7 @@ function initMap() {
         zoom: 12
     });
 
+    // Configurar o Drawing Manager
     drawingManager = new google.maps.drawing.DrawingManager({
         drawingMode: null,
         drawingControl: false,
@@ -32,67 +27,44 @@ function initMap() {
             fillOpacity: 0.5,
             strokeWeight: 2,
             clickable: true,
-            editable: false,
+            editable: false, // Inicialmente não editável
             zIndex: 1
         }
     });
     drawingManager.setMap(map);
 
+    // Eventos para capturar as formas desenhadas
     google.maps.event.addListener(drawingManager, 'overlaycomplete', function (event) {
         let newShape = event.overlay;
         newShape.type = event.type;
+
+        // Definir a edição com base no modo atual
         newShape.setEditable(isEditing);
+
+        // Adicionar listener para permitir a exclusão de vértices
         setupPolygonDeleteListener(newShape);
 
+        // Se estivermos desenhando o território principal
         if (isDrawingTerritory) {
             if (territoryShape) {
+                // Remover o território anterior, se existir
                 territoryShape.setMap(null);
             }
             territoryShape = newShape;
             territoryShape.type = 'territory';
 
+            // Desativar o modo de desenho após desenhar o território
             drawingManager.setDrawingMode(null);
+
+            // Atualizar o estado dos botões
             document.getElementById('draw-territory-btn').disabled = true;
-            document.getElementById('draw-block-btn').disabled = false;
+            document.getElementById('draw-lots-btn').disabled = false;
+
             isDrawingTerritory = false;
-
-        } else if (isDrawingBlock) {
-            newShape.type = 'block';
-            let isValidBlock = true;
-            newShape.getPath().forEach(function (point) {
-                if (!google.maps.geometry.poly.containsLocation(point, territoryShape)) {
-                    isValidBlock = false;
-                }
-            });
-
-            if (!isValidBlock) {
-                alert('A quadra desenhada está fora do território. Desenhe-a dentro do território.');
-                newShape.setMap(null);
-            } else {
-                blockShapes.push(newShape);
-
-                let lotWidthMeters = prompt("Insira a largura do lote (em metros):", "10");
-                let lotHeightMeters = prompt("Insira o comprimento do lote (em metros):", "20");
-                let angleDegrees = prompt("Insira o ângulo de orientação (0 a 360 graus):", "0");
-                if (!lotWidthMeters || !lotHeightMeters || !angleDegrees ||
-                    isNaN(lotWidthMeters) || isNaN(lotHeightMeters) || isNaN(angleDegrees)) {
-                    alert('Valores inválidos. Por favor, tente novamente.');
-                    return;
-                }
-
-                currentLotWidthMeters = parseFloat(lotWidthMeters);
-                currentLotHeightMeters = parseFloat(lotHeightMeters);
-                currentAngleDeg = parseFloat(angleDegrees);
-                currentBlockPolygon = newShape;
-
-                generateLotsForBlock(currentBlockPolygon, currentLotWidthMeters, currentLotHeightMeters, currentAngleDeg);
-            }
-            isDrawingBlock = false;
-            drawingManager.setDrawingMode(null);
-
         } else if (isDrawingLots) {
-            // Caso queira manter a lógica antiga de desenhar lotes manualmente
             newShape.type = 'lot';
+
+            // Verificar se o lote está dentro do território
             let isValidLot = true;
             newShape.getPath().forEach(function (point) {
                 if (!google.maps.geometry.poly.containsLocation(point, territoryShape)) {
@@ -101,31 +73,40 @@ function initMap() {
             });
 
             if (!isValidLot) {
-                alert('O lote desenhado está fora do território.');
+                alert('O lote desenhado está fora do território. Por favor, desenhe o lote dentro do território.');
+                // Remover o lote inválido do mapa
                 newShape.setMap(null);
             } else {
                 lotShapes.push(newShape);
             }
+            // Continuar no modo de desenho de lotes
         }
 
+        // Evento para selecionar a forma ao clicar nela
         google.maps.event.addListener(newShape, 'click', function () {
             if (isDeleting) {
+                // No modo de apagar, deletar a forma ao clicar
                 deleteShape(newShape);
             } else if (isEditing) {
+                // No modo de editar, selecionar a forma para edição
                 selectShape(newShape);
             }
         });
     });
 }
 
+// Função para adicionar listener para exclusão de vértices
 function setupPolygonDeleteListener(polygon) {
     google.maps.event.addListener(polygon.getPath(), 'rightclick', function (event) {
+        // Verificar se foi clicado em um vértice
         if (event.vertex != null) {
+            // Remover o vértice clicado
             polygon.getPath().removeAt(event.vertex);
         }
     });
 }
 
+// Função para selecionar uma forma para edição
 function selectShape(shape) {
     if (selectedShape) {
         selectedShape.setEditable(false);
@@ -134,11 +115,15 @@ function selectShape(shape) {
     selectedShape.setEditable(true);
 }
 
+// Função para deletar uma forma
 function deleteShape(shape) {
     if (!shape) return;
+
     let confirmDelete = confirm('Tem certeza de que deseja apagar este polígono?');
     if (confirmDelete) {
+        // Chamar a API para deletar do servidor
         if (shape.type === 'territory') {
+            // Deletar território
             fetch(`/api/territorios/${shape.territorioId}`, { method: 'DELETE' })
                 .then(response => {
                     if (!response.ok) {
@@ -148,20 +133,26 @@ function deleteShape(shape) {
                 })
                 .then(data => {
                     alert(data.message);
+                    // Remover do mapa
                     shape.setMap(null);
                     territoryShape = null;
-                    lotShapes.forEach(lote => lote.setMap(null));
+
+                    // Remover todos os lotes associados
+                    lotShapes.forEach(lote => {
+                        lote.setMap(null);
+                    });
                     lotShapes = [];
-                    blockShapes.forEach(b => b.setMap(null));
-                    blockShapes = [];
+
+                    // Atualizar estado dos botões
                     document.getElementById('draw-territory-btn').disabled = false;
-                    document.getElementById('draw-block-btn').disabled = true;
+                    document.getElementById('draw-lots-btn').disabled = true;
                 })
                 .catch(error => {
                     console.error('Erro ao excluir território:', error);
                     alert('Erro ao excluir território. Tente novamente.');
                 });
         } else if (shape.type === 'lot') {
+            // Deletar lote
             fetch(`/api/lotes/${shape.loteId}`, { method: 'DELETE' })
                 .then(response => {
                     if (!response.ok) {
@@ -171,140 +162,26 @@ function deleteShape(shape) {
                 })
                 .then(data => {
                     alert(data.message);
+                    // Remover do mapa
                     shape.setMap(null);
-                    lotShapes = lotShapes.filter(l => l !== shape);
+                    // Remover do array de lotes
+                    lotShapes = lotShapes.filter(lote => lote !== shape);
                 })
                 .catch(error => {
                     console.error('Erro ao excluir lote:', error);
                     alert('Erro ao excluir lote. Tente novamente.');
                 });
-        } else if (shape.type === 'block') {
-            shape.setMap(null);
-            blockShapes = blockShapes.filter(b => b !== shape);
         }
     }
 }
 
-function latLngToLocalMeters(lat, lng, centerLat, centerLng) {
-    let metersPerDegreeLat = 111320;
-    let metersPerDegreeLng = metersPerDegreeLat * Math.cos(centerLat * Math.PI / 180);
-    let x = (lng - centerLng) * metersPerDegreeLng;
-    let y = (lat - centerLat) * metersPerDegreeLat;
-    return { x, y };
-}
-
-function localMetersToLatLng(x, y, centerLat, centerLng) {
-    let metersPerDegreeLat = 111320;
-    let metersPerDegreeLng = metersPerDegreeLat * Math.cos(centerLat * Math.PI / 180);
-    let lng = (x / metersPerDegreeLng) + centerLng;
-    let lat = (y / metersPerDegreeLat) + centerLat;
-    return { lat, lng };
-}
-
-function rotatePoint(x, y, angleDeg) {
-    let angleRad = angleDeg * Math.PI / 180;
-    let cosA = Math.cos(angleRad);
-    let sinA = Math.sin(angleRad);
-    let xRot = x * cosA - y * sinA;
-    let yRot = x * sinA + y * cosA;
-    return { x: xRot, y: yRot };
-}
-
-function rotatePointInverse(x, y, angleDeg) {
-    return rotatePoint(x, y, -angleDeg);
-}
-
-function generateLotsForBlock(blockPolygon, lotWidthMeters, lotHeightMeters, angleDeg) {
-    let bounds = new google.maps.LatLngBounds();
-    let path = blockPolygon.getPath().getArray();
-    path.forEach(coord => {
-        bounds.extend(coord);
-    });
-
-    let southWest = bounds.getSouthWest();
-    let northEast = bounds.getNorthEast();
-
-    let latMin = southWest.lat();
-    let lngMin = southWest.lng();
-    let latMax = northEast.lat();
-    let lngMax = northEast.lng();
-
-    let centerLat = (latMin + latMax) / 2.0;
-    let centerLng = (lngMin + lngMax) / 2.0;
-
-    let blockPolygonLocal = path.map(p => latLngToLocalMeters(p.lat(), p.lng(), centerLat, centerLng));
-    let blockPolygonRotated = blockPolygonLocal.map(pt => rotatePoint(pt.x, pt.y, angleDeg));
-
-    let xs = blockPolygonRotated.map(p => p.x);
-    let ys = blockPolygonRotated.map(p => p.y);
-    let xMin = Math.min(...xs);
-    let xMax = Math.max(...xs);
-    let yMin = Math.min(...ys);
-    let yMax = Math.max(...ys);
-
-    for (let y = yMin; y < yMax; y += lotHeightMeters) {
-        for (let x = xMin; x < xMax; x += lotWidthMeters) {
-            let lotCoordsRot = [
-                { x: x, y: y },
-                { x: x + lotWidthMeters, y: y },
-                { x: x + lotWidthMeters, y: y + lotHeightMeters },
-                { x: x, y: y + lotHeightMeters }
-            ];
-
-            let centerX = x + lotWidthMeters / 2;
-            let centerY = y + lotHeightMeters / 2;
-            let centerPoint = { x: centerX, y: centerY };
-
-            if (pointInPolygon(centerPoint, blockPolygonRotated)) {
-                let lotCoordsOriginal = lotCoordsRot.map(pt => {
-                    let invRot = rotatePointInverse(pt.x, pt.y, angleDeg);
-                    let ll = localMetersToLatLng(invRot.x, invRot.y, centerLat, centerLng);
-                    return { lat: ll.lat, lng: ll.lng };
-                });
-
-                let lotShape = new google.maps.Polygon({
-                    paths: lotCoordsOriginal,
-                    fillColor: '#FFD700',
-                    fillOpacity: 0.5,
-                    strokeWeight: 1,
-                    editable: isEditing,
-                    map: map
-                });
-                lotShape.type = 'lot';
-
-                setupPolygonDeleteListener(lotShape);
-                lotShape.addListener('click', () => {
-                    if (isDeleting) {
-                        deleteShape(lotShape);
-                    } else if (isEditing) {
-                        selectShape(lotShape);
-                    }
-                });
-
-                lotShapes.push(lotShape);
-            }
-        }
-    }
-}
-
-function pointInPolygon(pt, polygon) {
-    let c = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        let xi = polygon[i].x, yi = polygon[i].y;
-        let xj = polygon[j].x, yj = polygon[j].y;
-
-        let intersect = ((yi > pt.y) !== (yj > pt.y)) &&
-            (pt.x < (xj - xi) * (pt.y - yi) / (yj - yi) + xi);
-        if (intersect) c = !c;
-    }
-    return c;
-}
-
-/* Código restante (usuários, território, salvamento) permanece o mesmo */
+// Variável para armazenar a forma selecionada
+let selectedShape = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     let currentUserDesignacao = '';
 
+    // Obter nome do usuário e designação
     fetch('/user-info')
         .then(response => {
             if (!response.ok) {
@@ -318,11 +195,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (data.designacao) {
                 currentUserDesignacao = data.designacao;
+                console.log(`Designação do usuário: ${data.designacao}`);
+                // Controlar a visibilidade da seção de Usuários
                 if (!['Administrador', 'Superintendente de Serviço', 'Superintendente de Território'].includes(data.designacao)) {
                     document.querySelector('a[data-target="usuarios"]').parentElement.style.display = 'none';
                 }
             }
+            // Atualizar o total de usuários no cartão de Início
             updateTotalUsuarios();
+            // Se a seção 'usuarios' está ativa, carregar os usuários
             const activeSection = document.querySelector('.section.active');
             if (activeSection.id === 'usuarios') {
                 loadUsers();
@@ -330,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => console.error('Erro ao obter informações do usuário:', error));
 
+    // Implementar logout
     document.getElementById('logout-btn').addEventListener('click', () => {
         fetch('/logout', { method: 'POST' })
             .then(() => {
@@ -338,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Erro ao fazer logout:', error));
     });
 
+    // Alternar a sidebar em dispositivos móveis
     const toggleBtn = document.querySelector('.toggle-btn');
     const sidebar = document.querySelector('.sidebar');
     const mainContent = document.querySelector('.main-content');
@@ -346,35 +229,50 @@ document.addEventListener('DOMContentLoaded', () => {
         sidebar.classList.toggle('active');
     });
 
+    // Destacar o link ativo na barra lateral e exibir a seção correspondente
     const navLinks = document.querySelectorAll('.sidebar nav ul li a');
     const sections = document.querySelectorAll('.section');
 
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
+
+            // Remover classe 'active' de todos os links
             navLinks.forEach(item => item.classList.remove('active'));
+
+            // Adicionar classe 'active' ao link clicado
             link.classList.add('active');
+
+            // Ocultar todas as seções
             sections.forEach(section => section.classList.remove('active'));
+
+            // Obter o alvo da seção a ser exibida
             const target = link.getAttribute('data-target');
             const targetSection = document.getElementById(target);
+
             if (targetSection) {
                 targetSection.classList.add('active');
+                // Se a seção é 'usuarios', carregar os usuários
                 if (target === 'usuarios') {
                     loadUsers();
                 }
             }
+
+            // Fechar a sidebar após selecionar um item (em mobile)
             if (window.innerWidth <= 768) {
                 sidebar.classList.remove('active');
             }
         });
     });
 
+    // Fechar a sidebar ao clicar fora dela (em mobile)
     mainContent.addEventListener('click', () => {
         if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
             sidebar.classList.remove('active');
         }
     });
 
+    // Função para atualizar o total de usuários no cartão de Início
     function updateTotalUsuarios() {
         console.log('Fazendo requisição para obter o total de usuários');
         fetch('/api/users/count', {
@@ -393,6 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Erro ao obter total de usuários:', error));
     }
 
+    // Função para carregar usuários na tabela
     function loadUsers() {
         console.log('Carregando usuários');
         fetch('/api/users', {
@@ -407,9 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 console.log('Usuários recebidos:', data);
                 const tbody = document.querySelector('#users-table tbody');
-                tbody.innerHTML = '';
+                tbody.innerHTML = ''; // Limpar tabela
+
                 data.forEach(user => {
                     const tr = document.createElement('tr');
+
                     tr.innerHTML = `
                         <td>${user.id}</td>
                         <td>${user.username}</td>
@@ -427,14 +328,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         </td>
                     `;
+
                     tbody.appendChild(tr);
                 });
+
+                // Adicionar eventos aos botões
                 addUserActionEvents();
             })
             .catch(error => console.error('Erro ao carregar usuários:', error));
     }
 
+    // Função para adicionar eventos aos botões de ação
     function addUserActionEvents() {
+        // Editar usuário
         const editButtons = document.querySelectorAll('.edit-btn');
         editButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -443,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // Excluir usuário
         const deleteButtons = document.querySelectorAll('.delete-btn');
         deleteButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -451,6 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // Aceitar ou Restringir acesso
         const acceptButtons = document.querySelectorAll('.accept-btn');
         acceptButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -468,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Função para abrir o modal de edição
     function openEditModal(userId) {
         console.log(`Abrindo modal de edição para o usuário ID ${userId}`);
         fetch(`/api/users/${userId}`)
@@ -485,12 +394,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('edit-endereco').value = user.endereco || '';
                     document.getElementById('edit-celular').value = user.celular || '';
                     document.getElementById('edit-designacao').value = user.designacao;
+
+                    // Abrir modal
                     document.getElementById('edit-user-modal').style.display = 'block';
                 }
             })
             .catch(error => console.error('Erro ao buscar usuário:', error));
     }
 
+    // Função para excluir usuário
     function deleteUser(userId) {
         if (confirm('Tem certeza de que deseja excluir este usuário?')) {
             console.log(`Excluindo usuário ID ${userId}`);
@@ -510,6 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Função para aceitar ou restringir acesso do usuário
     function changeUserStatus(userId, accept) {
         const endpoint = accept ? `/api/users/${userId}/accept` : `/api/users/${userId}/restrict`;
         const action = accept ? 'aceitar' : 'restringir';
@@ -532,6 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Fechar modais ao clicar no botão de fechar
     const closeButtons = document.querySelectorAll('.close-btn');
     closeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -539,12 +453,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Fechar modais ao clicar fora do conteúdo do modal
     window.addEventListener('click', (event) => {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = 'none';
         }
     });
 
+    // Adicionar usuário
     document.getElementById('add-user-btn')?.addEventListener('click', () => {
         document.getElementById('add-user-modal').style.display = 'block';
     });
@@ -584,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Erro ao adicionar usuário:', error));
     });
 
+    // Editar usuário
     document.getElementById('edit-user-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
 
@@ -619,7 +536,9 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Erro ao editar usuário:', error));
     });
 
+    // Inicializar
     function initialize() {
+        // Se a seção ativa for 'usuarios' ao carregar, carregar os usuários
         const activeSection = document.querySelector('.section.active');
         if (activeSection.id === 'usuarios') {
             loadUsers();
@@ -628,107 +547,126 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initialize();
 
+    /* ===================== Seção de Território ===================== */
+
+    // Gerenciar as abas dentro da seção "Território"
     const tabLinks = document.querySelectorAll('.tab-link');
     const tabContents = document.querySelectorAll('.tab-content');
 
     tabLinks.forEach(link => {
         link.addEventListener('click', () => {
+            // Remover classe 'active' de todos os links e conteúdos
             tabLinks.forEach(link => link.classList.remove('active'));
             tabContents.forEach(content => content.classList.remove('active'));
 
+            // Adicionar classe 'active' ao link e conteúdo clicados
             link.classList.add('active');
             const tab = link.getAttribute('data-tab');
             document.getElementById(tab).classList.add('active');
 
+            // Se a aba 'gerenciamento' for ativada, carregar os territórios
             if (tab === 'gerenciamento') {
                 loadTerritorios();
             }
         });
     });
 
+    // Botão para desenhar o território
     document.getElementById('draw-territory-btn').addEventListener('click', () => {
+        // Desativar os modos de edição e apagar se estiverem ativos
         if (isEditing || isDeleting) {
             toggleEditingMode(false);
             toggleDeletingMode(false);
         }
         isDrawingTerritory = true;
         isDrawingLots = false;
-        isDrawingBlock = false;
         drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
     });
 
-    document.getElementById('draw-block-btn').addEventListener('click', () => {
+    // Botão para desenhar os lotes
+    document.getElementById('draw-lots-btn').addEventListener('click', () => {
         if (!territoryShape) {
             alert('Por favor, desenhe primeiro o território principal.');
             return;
         }
+        // Desativar os modos de edição e apagar se estiverem ativos
         if (isEditing || isDeleting) {
             toggleEditingMode(false);
             toggleDeletingMode(false);
         }
         isDrawingTerritory = false;
-        isDrawingLots = false;
-        isDrawingBlock = true;
+        isDrawingLots = true;
         drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
     });
 
-    document.getElementById('draw-lots-btn')?.style.setProperty('display', 'none', 'important');
-
+    // Botão para editar os polígonos
     document.getElementById('edit-mode-btn').addEventListener('click', () => {
         toggleEditingMode(!isEditing);
+        // Desativar o modo de apagar se estiver ativo
         if (isDeleting) {
             toggleDeletingMode(false);
         }
     });
 
+    // Botão para apagar os polígonos
     document.getElementById('delete-mode-btn').addEventListener('click', () => {
         toggleDeletingMode(!isDeleting);
+        // Desativar o modo de edição se estiver ativo
         if (isEditing) {
             toggleEditingMode(false);
         }
     });
 
+    // Função para alternar o modo de edição
     function toggleEditingMode(enable) {
         isEditing = enable;
         if (isEditing) {
+            // Ativar modo de edição
             setEditing(true);
+            // Desativar o modo de desenho
             drawingManager.setDrawingMode(null);
             isDrawingTerritory = false;
             isDrawingLots = false;
-            isDrawingBlock = false;
+            // Atualizar aparência do botão
             document.getElementById('edit-mode-btn').classList.add('active');
         } else {
+            // Desativar modo de edição
             setEditing(false);
+            // Atualizar aparência do botão
             document.getElementById('edit-mode-btn').classList.remove('active');
         }
     }
 
+    // Função para alternar o modo de apagar
     function toggleDeletingMode(enable) {
         isDeleting = enable;
         if (isDeleting) {
+            // Ativar modo de apagar
             setDeleting(true);
+            // Desativar os modos de desenho e edição
             drawingManager.setDrawingMode(null);
             isDrawingTerritory = false;
             isDrawingLots = false;
-            isDrawingBlock = false;
             setEditing(false);
+            // Atualizar aparência do botão
             document.getElementById('delete-mode-btn').classList.add('active');
         } else {
+            // Desativar modo de apagar
             setDeleting(false);
+            // Atualizar aparência do botão
             document.getElementById('delete-mode-btn').classList.remove('active');
         }
     }
 
+    // Função para definir o estado de edição nos polígonos
     function setEditing(enabled) {
         if (territoryShape) {
             territoryShape.setEditable(enabled);
         }
-        blockShapes.forEach(shape => {
-            shape.setEditable(enabled);
-        });
         lotShapes.forEach(shape => {
             shape.setEditable(enabled);
         });
+        // Alterar o cursor do mapa
         if (enabled) {
             map.setOptions({ draggableCursor: 'pointer' });
         } else {
@@ -736,14 +674,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Função para definir o estado de apagar nos polígonos
     function setDeleting(enabled) {
         if (enabled) {
+            // Alterar o cursor para indicar modo de apagar
             map.setOptions({ draggableCursor: 'not-allowed' });
         } else {
             map.setOptions({ draggableCursor: null });
         }
     }
 
+    // Botão para salvar o território
     document.getElementById('save-territorio-btn').addEventListener('click', () => {
         const identificador = document.getElementById('territorio-id').value.trim();
         if (!identificador) {
@@ -756,36 +697,35 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Obter os dados do território principal
         let territoryCoordinates = [];
         territoryShape.getPath().forEach(point => {
             territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
         });
 
-        let blocksData = blockShapes.map(block => {
-            let blockCoords = [];
-            block.getPath().forEach(point => {
-                blockCoords.push({ lat: point.lat(), lng: point.lng() });
+        // Obter os dados dos lotes
+        let lotsData = lotShapes.map(shape => {
+            let shapeCoordinates = [];
+            shape.getPath().forEach(point => {
+                shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
             });
-
-            let blockLots = [];
-            lotShapes.forEach(lot => {
-                let lotCoords = lot.getPath().getArray().map(p => ({ lat: p.lat(), lng: p.lng() }));
-                blockLots.push(lotCoords);
-            });
-
-            return {
-                block: blockCoords,
-                lots: blockLots
-            };
+            return shapeCoordinates;
         });
 
+        // Log para verificar os dados
+        console.log('Dados a serem enviados:');
+        console.log('Identificador:', identificador);
+        console.log('Territory:', territoryCoordinates);
+        console.log('Lots:', lotsData);
+
+        // Enviar os dados ao servidor
         fetch('/api/territorios', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 identificador: identificador,
                 territory: territoryCoordinates,
-                blocks: blocksData
+                lots: lotsData
             })
         })
             .then(response => {
@@ -796,17 +736,19 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 alert(data.message);
+                // Limpar mapa e formulário
                 if (territoryShape) {
                     territoryShape.setMap(null);
                     territoryShape = null;
                 }
-                blockShapes.forEach(b => b.setMap(null));
-                blockShapes = [];
-                lotShapes.forEach(l => l.setMap(null));
+                lotShapes.forEach(shape => {
+                    shape.setMap(null);
+                });
                 lotShapes = [];
                 document.getElementById('territorio-id').value = '';
+                // Atualizar estado dos botões
                 document.getElementById('draw-territory-btn').disabled = false;
-                document.getElementById('draw-block-btn').disabled = true;
+                document.getElementById('draw-lots-btn').disabled = true;
             })
             .catch(error => {
                 console.error('Erro ao salvar território:', error);
@@ -814,29 +756,33 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
+    // Botão para salvar alterações no território e lotes
     document.getElementById('save-edits-btn').addEventListener('click', () => {
         if (!territoryShape) {
             alert('Nenhum território para salvar.');
             return;
         }
 
+        // Obter os dados atualizados do território
         let territoryCoordinates = [];
         territoryShape.getPath().forEach(point => {
             territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
         });
 
+        // Obter os dados atualizados dos lotes
         let lotsData = lotShapes.map(shape => {
             let shapeCoordinates = [];
             shape.getPath().forEach(point => {
                 shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
             });
             return {
-                id: shape.loteId,
+                id: shape.loteId, // Certifique-se de associar o ID do lote ao shape
                 coordenadas: shapeCoordinates
             };
         });
 
-        fetch(`/api/territorios/${territoryShape.territorioId}`, {
+        // Enviar os dados ao servidor
+        fetch(`/api/territorios/${territoryShape.territorioId}`, { // Certifique-se de armazenar o ID do território
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -872,9 +818,11 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 const tbody = document.querySelector('#territorios-table tbody');
-                tbody.innerHTML = '';
+                tbody.innerHTML = ''; // Limpar tabela
+
                 data.forEach(territorio => {
                     const tr = document.createElement('tr');
+
                     tr.innerHTML = `
                         <td>${territorio.id}</td>
                         <td>${territorio.identificador}</td>
@@ -884,14 +832,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="action-btn delete-btn" data-id="${territorio.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
                         </td>
                     `;
+
                     tbody.appendChild(tr);
                 });
+
+                // Adicionar eventos aos botões
                 addTerritorioActionEvents();
             })
             .catch(error => console.error('Erro ao carregar territórios:', error));
     }
 
     function addTerritorioActionEvents() {
+        // Visualizar território
         const viewButtons = document.querySelectorAll('.view-btn');
         viewButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -900,6 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // Excluir território
         const deleteButtons = document.querySelectorAll('.delete-btn');
         deleteButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -920,6 +873,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(data => {
+                // Exibir o território e os lotes no mapa
                 showTerritorioOnMap(data);
             })
             .catch(error => {
@@ -932,6 +886,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const territorio = data.territorio;
         const lotes = data.lotes;
 
+        // Limpar o mapa
         if (territoryShape) {
             territoryShape.setMap(null);
             territoryShape = null;
@@ -940,24 +895,30 @@ document.addEventListener('DOMContentLoaded', () => {
             shape.setMap(null);
         });
         lotShapes = [];
-        blockShapes.forEach(b => b.setMap(null));
-        blockShapes = [];
 
+        // Definir cor do território com base no status
         const territoryColor = territorio.status ? '#32CD32' : 'rgba(255, 0, 0, 0.3)';
+
+        // Desenhar o território
         const territoryCoords = territorio.territory;
         territoryShape = new google.maps.Polygon({
             paths: territoryCoords,
             fillColor: territoryColor,
             fillOpacity: 0.5,
             strokeWeight: 2,
-            editable: isEditing,
+            editable: isEditing, // Definir com base no modo de edição
             map: map
         });
 
+        // Armazenar o ID do território no shape
         territoryShape.territorioId = territorio.id;
         territoryShape.type = 'territory';
+
+        // Adicionar listener para exclusão de vértices no território
         setupPolygonDeleteListener(territoryShape);
-        territoryShape.addEventListener('click', () => {
+
+        // Adicionar listener para seleção no modo de edição
+        territoryShape.addListener('click', () => {
             if (isDeleting) {
                 deleteShape(territoryShape);
             } else if (isEditing) {
@@ -965,26 +926,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Desenhar os lotes
         lotes.forEach(lote => {
             const lotColor = lote.status ? '#32CD32' : '#FF0000';
+
             const lotShape = new google.maps.Polygon({
                 paths: lote.coordenadas,
                 fillColor: lotColor,
                 fillOpacity: 0.5,
                 strokeWeight: 2,
-                editable: isEditing,
+                editable: isEditing, // Definir com base no modo de edição
                 map: map
             });
 
+            // Armazenar o ID do lote no shape
             lotShape.loteId = lote.id;
             lotShape.type = 'lot';
+
+            // Adicionar listener para exclusão de vértices no lote
             setupPolygonDeleteListener(lotShape);
-            lotShape.addEventListener('click', () => {
+
+            // Adicionar listener para seleção no modo de edição
+            lotShape.addListener('click', () => {
                 if (isDeleting) {
                     deleteShape(lotShape);
                 } else if (isEditing) {
                     selectShape(lotShape);
-                } else {
+                }
+            });
+
+            // Adicionar evento de clique para atualizar o status do lote
+            lotShape.addListener('click', () => {
+                if (!isDeleting && !isEditing) {
                     updateLoteStatus(lote.id, !lote.status);
                 }
             });
@@ -992,14 +965,14 @@ document.addEventListener('DOMContentLoaded', () => {
             lotShapes.push(lotShape);
         });
 
+        // Centralizar o mapa no território
         const bounds = new google.maps.LatLngBounds();
         territoryCoords.forEach(coord => {
             bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
         });
         map.fitBounds(bounds);
 
-        const tabLinks = document.querySelectorAll('.tab-link');
-        const tabContents = document.querySelectorAll('.tab-content');
+        // Alternar para a aba de cadastro para exibir o mapa
         tabLinks.forEach(link => link.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
         document.querySelector('.tab-link[data-tab="cadastro"]').classList.add('active');
@@ -1020,6 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 alert(data.message);
+                // Recarregar o território para atualizar as cores
                 viewTerritorio(territoryShape.territorioId);
             })
             .catch(error => {
