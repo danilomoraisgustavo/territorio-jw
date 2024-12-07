@@ -1,0 +1,418 @@
+/* dashboard.css */
+
+/* Variáveis de cores */
+:root {
+    --primary-color: #5A2D82;
+    --secondary-color: #7b3eb1;
+    --background-color: #f4f4f4;
+    --header-height: 60px;
+    --sidebar-width: 250px;
+    --transition-speed: 0.3s;
+    --text-color: #333;
+    --white-color: #ffffff;
+    --card-shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+/* Container principal */
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Cabeçalho */
+.header {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    height: var(--header-height);
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 1000;
+    transition: left var(--transition-speed);
+}
+
+.header .logo h1 {
+    font-size: 1.5rem;
+}
+
+.header .user-info {
+    display: flex;
+    align-items: center;
+}
+
+.header .user-info #username {
+    margin-right: 15px;
+    font-weight: bold;
+}
+
+.header .user-info #logout-btn {
+    padding: 8px 12px;
+    background-color: var(--secondary-color);
+    border: none;
+    border-radius: 4px;
+    color: var(--white-color);
+    cursor: pointer;
+    transition: background-color var(--transition-speed);
+}
+
+.header .user-info #logout-btn:hover {
+    background-color: #6a42a1;
+    /* Tom mais escuro de --secondary-color */
+}
+
+/* Barra lateral */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100%;
+    background-color: var(--primary-color);
+    padding-top: var(--header-height);
+    transition: transform var(--transition-speed);
+    overflow-y: auto;
+}
+
+.sidebar nav ul {
+    list-style: none;
+}
+
+.sidebar nav ul li {
+    width: 100%;
+}
+
+.sidebar nav ul li a {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: var(--white-color);
+    text-decoration: none;
+    transition: background-color var(--transition-speed);
+}
+
+.sidebar nav ul li a:hover,
+.sidebar nav ul li a.active {
+    background-color: var(--secondary-color);
+}
+
+.sidebar nav ul li a i {
+    margin-right: 10px;
+    font-size: 1.2rem;
+}
+
+/* Conteúdo principal */
+.main-content {
+    margin-left: var(--sidebar-width);
+    padding: calc(var(--header-height) + 20px) 20px 20px 20px;
+    flex: 1;
+    transition: margin-left var(--transition-speed);
+}
+
+.main-content h2 {
+    margin-bottom: 10px;
+}
+
+.main-content p {
+    margin-bottom: 20px;
+    color: #666;
+}
+
+/* Seções */
+.section-container {
+    margin-top: 20px;
+}
+
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
+
+/* Cards */
+.card-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.card {
+    background-color: var(--white-color);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px var(--card-shadow);
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px var(--card-shadow);
+}
+
+.card i {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.card h3 {
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.card p {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .header {
+        left: 0;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    /* Botão de toggle da sidebar */
+    .header .toggle-btn {
+        display: block;
+        cursor: pointer;
+        font-size: 1.5rem;
+        margin-right: 15px;
+    }
+}
+
+/* Botão de toggle da sidebar (visível em mobile) */
+.toggle-btn {
+    display: none;
+    color: var(--white-color);
+    cursor: pointer;
+}
+
+.toggle-btn i {
+    font-size: 1.5rem;
+}
+
+/* Botões */
+.btn {
+    padding: 10px 15px;
+    background-color: var(--primary-color);
+    border: none;
+    border-radius: 4px;
+    color: var(--white-color);
+    cursor: pointer;
+    transition: background-color var(--transition-speed);
+    margin: 10px 0;
+}
+
+.btn:hover {
+    background-color: var(--secondary-color);
+}
+
+/* Tabela de Usuários */
+#users-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#users-table th,
+#users-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+#users-table th {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+
+#users-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.action-btn {
+    padding: 5px 10px;
+    margin-right: 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--white-color);
+    transition: background-color var(--transition-speed);
+}
+
+.edit-btn {
+    background-color: #4CAF50;
+    /* Verde */
+}
+
+.edit-btn:hover {
+    background-color: #45a049;
+}
+
+.delete-btn {
+    background-color: #f44336;
+    /* Vermelho */
+}
+
+.delete-btn:hover {
+    background-color: #da190b;
+}
+
+.accept-btn {
+    background-color: #008CBA;
+    /* Azul */
+}
+
+.accept-btn:hover {
+    background-color: #007bb5;
+}
+
+.restrict-btn {
+    background-color: #555555;
+    /* Cinza */
+}
+
+.restrict-btn:hover {
+    background-color: #333333;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    /* Oculto por padrão */
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Fundo semi-transparente */
+}
+
+.modal-content {
+    background-color: var(--white-color);
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%;
+    border-radius: 8px;
+    position: relative;
+}
+
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    right: 20px;
+    top: 10px;
+    cursor: pointer;
+}
+
+.close-btn:hover,
+.close-btn:focus {
+    color: black;
+    text-decoration: none;
+}
+
+/* Formulários no Modal */
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content label {
+    margin: 10px 0 5px 0;
+}
+
+.modal-content input,
+.modal-content select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.modal-content .btn {
+    margin-top: 20px;
+    align-self: flex-end;
+}
+
+/* Estilos para as abas */
+.tab-container {
+    margin-top: 20px;
+}
+
+.tabs {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    border-bottom: 1px solid #ccc;
+}
+
+.tabs li {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    background: #f1f1f1;
+    margin-right: 5px;
+}
+
+.tabs li.active {
+    background: #fff;
+    border-top: 2px solid #007BFF;
+    color: #007BFF;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ccc;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.btn.active {
+    background-color: #4CAF50;
+    color: white;
+}

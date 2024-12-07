@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página de Login e Cadastro</title>
+    <!-- Adicionando Boxicons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div id="container" class="container">
+        <!-- SEÇÃO DE FORMULÁRIOS -->
+        <div class="row">
+            <!-- CADASTRO -->
+            <div class="col align-items-center flex-col sign-up">
+                <div class="form-wrapper align-items-center">
+                    <div class="form sign-up">
+                        <h2>Criar Conta</h2>
+                        <div class="input-group">
+                            <i class='bx bxs-user'></i>
+                            <input id="signup-username" type="text" placeholder="Nome de usuário" required>
+                            <span class="error-message"></span>
+                        </div>
+                        <div class="input-group">
+                            <i class='bx bx-mail-send'></i>
+                            <input id="signup-email" type="email" placeholder="E-mail" required>
+                            <span class="error-message"></span>
+                        </div>
+                        <!-- Novo campo para Endereço -->
+                        <div class="input-group">
+                            <i class='bx bxs-map'></i>
+                            <input id="signup-endereco" type="text" placeholder="Endereço" required>
+                            <span class="error-message"></span>
+                        </div>
+                        <!-- Novo campo para Celular -->
+                        <div class="input-group">
+                            <i class='bx bxs-phone'></i>
+                            <input id="signup-celular" type="text" placeholder="Celular" maxlength="16" required>
+                            <span class="error-message"></span>
+                        </div>
+                        <div class="input-group">
+                            <i class='bx bxs-lock-alt'></i>
+                            <input id="signup-password" type="password" placeholder="Senha" required>
+                            <i class="bx bx-show password-toggle"
+                                onclick="togglePasswordVisibility('signup-password')"></i>
+                            <span class="error-message"></span>
+                        </div>
+                        <div class="input-group">
+                            <i class='bx bxs-lock-alt'></i>
+                            <input id="signup-confirm-password" type="password" placeholder="Confirmar senha" required>
+                            <span class="error-message"></span>
+                        </div>
+                        <button id="signup-btn">Cadastrar</button>
+                        <p>
+                            <span>Já tem uma conta?</span>
+                            <b onclick="toggle()" class="pointer">Entre aqui</b>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- FIM CADASTRO -->
+
+            <!-- LOGIN -->
+            <div class="col align-items-center flex-col sign-in">
+                <div class="form-wrapper align-items-center">
+                    <div class="form sign-in">
+                        <h2>Entrar</h2>
+                        <div class="input-group">
+                            <i class='bx bx-mail-send'></i>
+                            <input id="signin-username" type="text" placeholder="Email" required>
+                            <span class="error-message"></span>
+                        </div>
+                        <div class="input-group">
+                            <i class='bx bxs-lock-alt'></i>
+                            <input id="signin-password" type="password" placeholder="Senha" required>
+
+                            <span class="error-message"></span>
+                        </div>
+                        <button id="signin-btn">Entrar</button>
+                        <p>
+                            <b>Esqueceu sua senha?</b>
+                        </p>
+                        <p>
+                            <span>Não tem uma conta?</span>
+                            <b onclick="toggle()" class="pointer">Cadastre-se aqui</b>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- FIM LOGIN -->
+        </div>
+        <!-- FIM DA SEÇÃO DE FORMULÁRIOS -->
+
+        <!-- SEÇÃO DE CONTEÚDO -->
+        <div class="row content-row">
+            <!-- CONTEÚDO LOGIN -->
+            <div class="col align-items-center flex-col">
+                <div class="text sign-in">
+                    <h2>"Ide, portanto, e fazei discípulos"</h2>
+                    <p>Mateus 28:19</p>
+                </div>
+                <div class="img sign-in">
+                    <!-- Adicione uma imagem aqui, se desejar -->
+                </div>
+            </div>
+            <!-- FIM CONTEÚDO LOGIN -->
+
+            <!-- CONTEÚDO CADASTRO -->
+            <div class="col align-items-center flex-col">
+                <div class="img sign-up">
+                    <!-- Adicione uma imagem aqui, se desejar -->
+                </div>
+                <div class="text sign-up">
+                    <h2>"Realize plenamente o seu ministério."</h2>
+                    <p>2 Timóteo 4:5</p>
+                </div>
+            </div>
+            <!-- FIM CONTEÚDO CADASTRO -->
+        </div>
+        <!-- Notificação -->
+        <div id="notification" class="notification">
+            <span id="notification-message"></span>
+            <span id="close-notification">x</span>
+        </div>
+        <!-- FIM DA SEÇÃO DE CONTEÚDO -->
+    </div>
+    <script src="/js/script.js"></script>
+</body>
+
+</html>
