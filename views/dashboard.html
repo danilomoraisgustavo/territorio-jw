@@ -197,7 +197,7 @@
                                 <button id="save-territorio-btn" class="btn">Salvar Território</button>
                             </div>
 
-                            <div id="map" style="height: 500px; width: 100%; margin-top: 10px;"></div>
+                            <div id="map-cadastro" style="height: 500px; width: 100%; margin-top: 10px;"></div>
 
                             <div class="export-container">
                                 <button class="btn export-toggle-btn"><i class="fas fa-download"></i> Exportar</button>
@@ -296,7 +296,7 @@
         </div>
     </div>
 
-    <div id="edit-territorio-modal" class="modal">
+    <div id="edit-territorio-modal-global" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <h2>Editar Território</h2>
@@ -315,7 +315,8 @@
 
     <script src="js/dashboard.js"></script>
     <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAwvAt4l0Pkb1c52FLUE-ttVxm4YZ9J8M&libraries=drawing,geometry&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAwvAt4l0Pkb1c52FLUE-ttVxm4YZ9J8M&libraries=drawing,geometry&callback=initMap"
+        async defer>
         </script>
 </body>
 

@@ -17,7 +17,7 @@ function initMap() {
     console.log('Inicializando os mapas');
 
     // Inicializar o mapa de Cadastro
-    map = new google.maps.Map(document.getElementById('map'), {
+    map = new google.maps.Map(document.getElementById('map-cadastro'), {
         center: { lat: -6.530239, lng: -49.851626 },
         zoom: 12
     });
@@ -74,7 +74,7 @@ function initMap() {
             if (!isValidLot) {
                 newShape.setMap(null);
                 // Atualizar a cor para indicar erro
-                newShape.setOptions({ fillColor: '#FF0000' });
+                // Como o lote já foi removido, não há como mudar a cor. Alternativamente, você pode adicionar uma notificação visual.
             } else {
                 lotShapes.push(newShape);
             }
@@ -89,6 +89,9 @@ function initMap() {
                 toggleLoteStatus(newShape);
             }
         });
+
+        // Atualizar a cor do território ou lote baseado no status
+        updateShapeColor(newShape);
     });
 }
 
@@ -131,6 +134,8 @@ function deleteShape(shape) {
                     lotShapes = [];
                     document.getElementById('draw-territory-btn').disabled = false;
                     document.getElementById('draw-lots-btn').disabled = true;
+                    loadTerritorios();
+                    fitMapGerenciamento();
                 })
                 .catch(error => {
                     console.error('Erro ao excluir território:', error);
@@ -532,7 +537,6 @@ document.addEventListener('DOMContentLoaded', () => {
             drawingManager.setDrawingMode(null);
             isDrawingTerritory = false;
             isDrawingLots = false;
-            // Mover botões para Gerenciamento
             // Opcional: adicionar botão de salvar alterações na Gerenciamento
         } else {
             setEditing(false);
@@ -649,11 +653,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Erro ao salvar território:', error);
                 alert('Erro ao salvar território. Tente novamente.');
             });
-    });
-
-    document.getElementById('save-territorio-form')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        // Implementar se necessário
     });
 
     document.getElementById('edit-territorio-form')?.addEventListener('submit', (e) => {
@@ -802,8 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const lotes = data.lotes;
 
         // Limpar mapas anteriores
-        const mapToClear = targetMap === mapGerenciamento ? mapGerenciamento : map;
-        clearMap(mapToClear);
+        clearMap(targetMap);
 
         // Desenhar território
         const territoryColor = territorio.status ? '#32CD32' : '#FF0000';
@@ -956,4 +954,4 @@ document.addEventListener('DOMContentLoaded', () => {
             mapGerenciamento.fitBounds(bounds);
         }
     }
-});
+})
