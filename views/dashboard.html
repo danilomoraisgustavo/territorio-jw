@@ -6,180 +6,106 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard</title>
-    <!-- Link para o arquivo CSS -->
+    <!-- Link para o arquivo CSS personalizado -->
     <link rel="stylesheet" href="css/dashboard.css">
+    <!-- Link para o Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-ENjdO4Dr2bkBIFxQpeoYGz2eJT0WycN0QjF1rrgk6eNm3mgFYB5k9g1JQ8N1w4X+" crossorigin="anonymous">
     <!-- Link para os ícones do Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         referrerpolicy="no-referrer" />
 </head>
 
 <body>
-    <div class="container dashboard-container">
-        <header class="header">
-            <div class="logo">
-                <h1>Meu Dashboard</h1>
+    <div class="d-flex" id="wrapper">
+        <!-- Sidebar -->
+        <div class="bg-primary border-end" id="sidebar-wrapper">
+            <div class="sidebar-heading text-white p-4 fs-4">Meu Dashboard</div>
+            <div class="list-group list-group-flush">
+                <a href="#" class="list-group-item list-group-item-action bg-primary text-white active"
+                    data-target="inicio"><i class="fas fa-home me-2"></i> Início</a>
+                <a href="#" class="list-group-item list-group-item-action bg-primary text-white"
+                    data-target="usuarios"><i class="fas fa-users me-2"></i> Usuários</a>
+                <a href="#" class="list-group-item list-group-item-action bg-primary text-white"
+                    data-target="territorio"><i class="fas fa-globe me-2"></i> Território</a>
+                <a href="#" class="list-group-item list-group-item-action bg-primary text-white"
+                    data-target="designacoes"><i class="fas fa-tasks me-2"></i> Designações</a>
+                <a href="#" class="list-group-item list-group-item-action bg-primary text-white"
+                    data-target="relatorios"><i class="fas fa-file-alt me-2"></i> Relatórios</a>
+                <a href="#" class="list-group-item list-group-item-action bg-primary text-white"
+                    data-target="configuracoes"><i class="fas fa-cog me-2"></i> Configurações</a>
             </div>
-            <div class="user-info">
-                <span id="username">Usuário</span>
-                <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Sair</button>
-            </div>
-            <div class="toggle-btn">
-                <i class="fas fa-bars"></i>
-            </div>
-        </header>
+        </div>
+        <!-- /#sidebar-wrapper -->
 
-        <aside class="sidebar">
-            <nav>
-                <ul>
-                    <li><a href="#" data-target="inicio" class="active"><i
-                                class="fas fa-home"></i><span>Início</span></a></li>
-                    <li><a href="#" data-target="usuarios"><i class="fas fa-users"></i><span>Usuários</span></a></li>
-                    <li><a href="#" data-target="territorio"><i class="fas fa-globe"></i><span>Território</span></a>
-                    </li>
-                    <li><a href="#" data-target="designacoes"><i class="fas fa-tasks"></i><span>Designações</span></a>
-                    </li>
-                    <li><a href="#" data-target="relatorios"><i class="fas fa-file-alt"></i><span>Relatórios</span></a>
-                    </li>
-                    <li><a href="#" data-target="configuracoes"><i class="fas fa-cog"></i><span>Configurações</span></a>
-                    </li>
-                </ul>
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <!-- Navbar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+                <div class="container-fluid">
+                    <button class="btn btn-primary" id="menu-toggle"><i class="fas fa-bars"></i></button>
+                    <div class="ms-auto d-flex align-items-center">
+                        <span class="me-3 fw-bold" id="username">Usuário</span>
+                        <button class="btn btn-outline-danger" id="logout-btn"><i class="fas fa-sign-out-alt me-2"></i>
+                            Sair</button>
+                    </div>
+                </div>
             </nav>
-        </aside>
+            <!-- /Navbar -->
 
-        <main class="main-content">
-            <div class="section-container">
-                <section id="inicio" class="section active">
-                    <div class="card-container">
-                        <div class="card">
-                            <i class="fas fa-user"></i>
-                            <h3>Total de Usuários</h3>
-                            <p id="total-usuarios">Carregando...</p>
-                        </div>
-                        <div class="card">
-                            <i class="fas fa-file-alt"></i>
-                            <h3>Relatórios</h3>
-                            <p>Carregando...</p>
-                        </div>
-                        <div class="card">
-                            <i class="fas fa-comments"></i>
-                            <h3>Mensagens</h3>
-                            <p>Carregando...</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="usuarios" class="section">
-                    <h2>Usuários</h2>
-                    <p>Gerencie os usuários aqui.</p>
-                    <button id="add-user-btn" class="btn btn-primary"><i class="fas fa-user-plus"></i> Adicionar
-                        Usuário</button>
-
-                    <table id="users-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nome de Usuário</th>
-                                <th>Email</th>
-                                <th>Endereço</th>
-                                <th>Celular</th>
-                                <th>Designação</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-
-                    <!-- Modal de Edição de Usuário -->
-                    <div id="edit-user-modal" class="modal">
-                        <div class="modal-content">
-                            <span class="close-btn">&times;</span>
-                            <h2>Editar Usuário</h2>
-                            <form id="edit-user-form">
-                                <input type="hidden" id="edit-user-id">
-                                <label for="edit-username">Nome de Usuário:</label>
-                                <input type="text" id="edit-username" name="username" required>
-
-                                <label for="edit-email">Email:</label>
-                                <input type="email" id="edit-email" name="email" required>
-
-                                <label for="edit-endereco">Endereço:</label>
-                                <input type="text" id="edit-endereco" name="endereco">
-
-                                <label for="edit-celular">Celular:</label>
-                                <input type="text" id="edit-celular" name="celular">
-
-                                <label for="edit-designacao">Designação:</label>
-                                <select id="edit-designacao" name="designacao" required>
-                                    <option value="Superintendente de Serviço">Superintendente de Serviço</option>
-                                    <option value="Superintendente de Território">Superintendente de Território</option>
-                                    <option value="Dirigente">Dirigente</option>
-                                    <option value="Publicador">Publicador</option>
-                                </select>
-
-                                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar
-                                    Alterações</button>
-                            </form>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="territorio" class="section">
-                    <h2>Território</h2>
-                    <div class="tab-container">
-                        <ul class="tabs">
-                            <li class="tab-link active" data-tab="cadastro"><i class="fas fa-file-alt"></i> Cadastro
-                            </li>
-                            <li class="tab-link" data-tab="gerenciamento"><i class="fas fa-edit"></i> Gerenciamento</li>
-                        </ul>
-
-                        <div id="cadastro" class="tab-content active">
-                            <form id="cadastro-territorio-form">
-                                <div class="form-group">
-                                    <label for="territorio-id">Identificador do Território:</label>
-                                    <input type="text" id="territorio-id" name="territorio-id" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="territorio-bairro">Bairro:</label>
-                                    <input type="text" id="territorio-bairro" name="territorio-bairro" required>
-                                </div>
-
-                                <div class="drawing-buttons">
-                                    <button type="button" id="draw-territory-btn" class="btn btn-secondary"><i
-                                            class="fas fa-draw-polygon"></i> Desenhar Território</button>
-                                    <button type="button" id="draw-lots-btn" class="btn btn-secondary" disabled><i
-                                            class="fas fa-layer-group"></i> Desenhar Lotes</button>
-                                    <button type="button" id="edit-mode-btn" class="btn btn-secondary"><i
-                                            class="fas fa-hand-pointer"></i> Editar</button>
-                                    <button type="button" id="delete-mode-btn" class="btn btn-danger"><i
-                                            class="fas fa-trash-alt"></i> Apagar</button>
-                                    <button type="button" id="save-territorio-btn" class="btn btn-primary"><i
-                                            class="fas fa-save"></i> Salvar Território</button>
-                                    <button type="button" id="save-edits-btn" class="btn btn-success"><i
-                                            class="fas fa-save"></i> Salvar Alterações</button>
-                                </div>
-
-                                <div id="map"></div>
-
-                                <div class="export-container">
-                                    <button class="btn export-toggle-btn"><i class="fas fa-download"></i>
-                                        Exportar</button>
-                                    <div class="export-dropdown">
-                                        <a href="#" data-format="pdf"><i class="fas fa-file-pdf"></i> Exportar PDF</a>
-                                        <a href="#" data-format="png"><i class="fas fa-file-image"></i> Exportar PNG</a>
+            <div class="container-fluid py-4">
+                <div class="section-container">
+                    <!-- Início -->
+                    <section id="inicio" class="section active">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="card text-white bg-primary h-100">
+                                    <div class="card-body d-flex flex-column align-items-center">
+                                        <i class="fas fa-user fa-3x mb-3"></i>
+                                        <h5 class="card-title">Total de Usuários</h5>
+                                        <p id="total-usuarios" class="card-text fs-4">Carregando...</p>
                                     </div>
                                 </div>
-                            </form>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-white bg-success h-100">
+                                    <div class="card-body d-flex flex-column align-items-center">
+                                        <i class="fas fa-file-alt fa-3x mb-3"></i>
+                                        <h5 class="card-title">Relatórios</h5>
+                                        <p class="card-text fs-4">Carregando...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card text-white bg-warning h-100">
+                                    <div class="card-body d-flex flex-column align-items-center">
+                                        <i class="fas fa-comments fa-3x mb-3"></i>
+                                        <h5 class="card-title">Mensagens</h5>
+                                        <p class="card-text fs-4">Carregando...</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                    </section>
+                    <!-- /Início -->
 
-                        <div id="gerenciamento" class="tab-content">
-                            <h3>Lista de Territórios</h3>
-                            <table id="territorios-table">
-                                <thead>
+                    <!-- Usuários -->
+                    <section id="usuarios" class="section d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2>Usuários</h2>
+                            <button id="add-user-btn" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i>
+                                Adicionar Usuário</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="users-table" class="table table-striped table-hover">
+                                <thead class="table-primary">
                                     <tr>
                                         <th>ID</th>
-                                        <th>Identificador</th>
+                                        <th>Nome de Usuário</th>
+                                        <th>Email</th>
+                                        <th>Endereço</th>
+                                        <th>Celular</th>
+                                        <th>Designação</th>
                                         <th>Status</th>
                                         <th>Ações</th>
                                     </tr>
@@ -187,79 +113,235 @@
                                 <tbody></tbody>
                             </table>
                         </div>
-                    </div>
-                </section>
 
-                <section id="designacoes" class="section">
-                    <h2>Designações</h2>
-                    <p>Gerencie as designações aqui.</p>
-                    <!-- Conteúdo adicional pode ser adicionado aqui -->
-                </section>
+                        <!-- Modal de Edição de Usuário -->
+                        <div class="modal fade" id="edit-user-modal" tabindex="-1" aria-labelledby="editUserModalLabel"
+                            aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="editUserModalLabel">Editar Usuário</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Fechar"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form id="edit-user-form">
+                                            <input type="hidden" id="edit-user-id">
+                                            <div class="mb-3">
+                                                <label for="edit-username" class="form-label">Nome de Usuário</label>
+                                                <input type="text" class="form-control" id="edit-username"
+                                                    name="username" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="edit-email" class="form-label">Email</label>
+                                                <input type="email" class="form-control" id="edit-email" name="email"
+                                                    required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="edit-endereco" class="form-label">Endereço</label>
+                                                <input type="text" class="form-control" id="edit-endereco"
+                                                    name="endereco">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="edit-celular" class="form-label">Celular</label>
+                                                <input type="text" class="form-control" id="edit-celular"
+                                                    name="celular">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="edit-designacao" class="form-label">Designação</label>
+                                                <select class="form-select" id="edit-designacao" name="designacao"
+                                                    required>
+                                                    <option value="Superintendente de Serviço">Superintendente de
+                                                        Serviço</option>
+                                                    <option value="Superintendente de Território">Superintendente de
+                                                        Território</option>
+                                                    <option value="Dirigente">Dirigente</option>
+                                                    <option value="Publicador">Publicador</option>
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="btn btn-success"><i
+                                                    class="fas fa-save me-2"></i> Salvar Alterações</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- /Usuários -->
 
-                <section id="relatorios" class="section">
-                    <h2>Relatórios</h2>
-                    <p>Acesse os relatórios aqui.</p>
-                    <!-- Conteúdo adicional pode ser adicionado aqui -->
-                </section>
+                    <!-- Território -->
+                    <section id="territorio" class="section d-none">
+                        <h2>Território</h2>
+                        <ul class="nav nav-tabs mb-3" id="territorioTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="cadastro-tab" data-bs-toggle="tab"
+                                    data-bs-target="#cadastro" type="button" role="tab" aria-controls="cadastro"
+                                    aria-selected="true">
+                                    <i class="fas fa-file-alt me-2"></i> Cadastro
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="gerenciamento-tab" data-bs-toggle="tab"
+                                    data-bs-target="#gerenciamento" type="button" role="tab"
+                                    aria-controls="gerenciamento" aria-selected="false">
+                                    <i class="fas fa-edit me-2"></i> Gerenciamento
+                                </button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="territorioTabContent">
+                            <!-- Cadastro -->
+                            <div class="tab-pane fade show active" id="cadastro" role="tabpanel"
+                                aria-labelledby="cadastro-tab">
+                                <form id="cadastro-territorio-form">
+                                    <div class="mb-3">
+                                        <label for="territorio-id" class="form-label">Identificador do
+                                            Território</label>
+                                        <input type="text" class="form-control" id="territorio-id" name="territorio-id"
+                                            required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="territorio-bairro" class="form-label">Bairro</label>
+                                        <input type="text" class="form-control" id="territorio-bairro"
+                                            name="territorio-bairro" required>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2 mb-3">
+                                        <button type="button" id="draw-territory-btn" class="btn btn-secondary"><i
+                                                class="fas fa-draw-polygon me-2"></i> Desenhar Território</button>
+                                        <button type="button" id="draw-lots-btn" class="btn btn-secondary" disabled><i
+                                                class="fas fa-layer-group me-2"></i> Desenhar Lotes</button>
+                                        <button type="button" id="edit-mode-btn" class="btn btn-outline-primary"><i
+                                                class="fas fa-hand-pointer me-2"></i> Editar</button>
+                                        <button type="button" id="delete-mode-btn" class="btn btn-outline-danger"><i
+                                                class="fas fa-trash-alt me-2"></i> Apagar</button>
+                                        <button type="button" id="save-territorio-btn" class="btn btn-primary"><i
+                                                class="fas fa-save me-2"></i> Salvar Território</button>
+                                        <button type="button" id="save-edits-btn" class="btn btn-success"><i
+                                                class="fas fa-save me-2"></i> Salvar Alterações</button>
+                                    </div>
+                                    <div id="map" class="mb-3 rounded"></div>
+                                    <div class="export-container">
+                                        <button type="button" class="btn btn-info dropdown-toggle" id="exportDropdown"
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fas fa-download me-2"></i> Exportar
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                                            <li><a class="dropdown-item" href="#" data-format="pdf"><i
+                                                        class="fas fa-file-pdf me-2"></i> Exportar PDF</a></li>
+                                            <li><a class="dropdown-item" href="#" data-format="png"><i
+                                                        class="fas fa-file-image me-2"></i> Exportar PNG</a></li>
+                                        </ul>
+                                    </div>
+                                </form>
+                            </div>
+                            <!-- /Cadastro -->
 
-                <section id="configuracoes" class="section">
-                    <h2>Configurações</h2>
-                    <p>Ajuste as configurações do sistema.</p>
-                    <!-- Conteúdo adicional pode ser adicionado aqui -->
-                </section>
+                            <!-- Gerenciamento -->
+                            <div class="tab-pane fade" id="gerenciamento" role="tabpanel"
+                                aria-labelledby="gerenciamento-tab">
+                                <h3>Lista de Territórios</h3>
+                                <div class="table-responsive">
+                                    <table id="territorios-table" class="table table-striped table-hover">
+                                        <thead class="table-success">
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Identificador</th>
+                                                <th>Status</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- /Gerenciamento -->
+                        </div>
+                    </section>
+                    <!-- /Território -->
+
+                    <!-- Designações -->
+                    <section id="designacoes" class="section d-none">
+                        <h2>Designações</h2>
+                        <p>Gerencie as designações aqui.</p>
+                        <!-- Conteúdo adicional pode ser adicionado aqui -->
+                    </section>
+                    <!-- /Designações -->
+
+                    <!-- Relatórios -->
+                    <section id="relatorios" class="section d-none">
+                        <h2>Relatórios</h2>
+                        <p>Acesse os relatórios aqui.</p>
+                        <!-- Conteúdo adicional pode ser adicionado aqui -->
+                    </section>
+                    <!-- /Relatórios -->
+
+                    <!-- Configurações -->
+                    <section id="configuracoes" class="section d-none">
+                        <h2>Configurações</h2>
+                        <p>Ajuste as configurações do sistema.</p>
+                        <!-- Conteúdo adicional pode ser adicionado aqui -->
+                    </section>
+                    <!-- /Configurações -->
+                </div>
             </div>
-        </main>
+        </div>
+        <!-- /#page-content-wrapper -->
     </div>
+    <!-- /#wrapper -->
 
     <!-- Modal de Adicionar Usuário -->
-    <div id="add-user-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>Adicionar Novo Usuário</h2>
-            <form id="add-user-form">
-                <div class="form-group">
-                    <label for="add-username">Nome de Usuário:</label>
-                    <input type="text" id="add-username" name="username" required>
+    <div class="modal fade" id="add-user-modal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addUserModalLabel">Adicionar Novo Usuário</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
-
-                <div class="form-group">
-                    <label for="add-email">Email:</label>
-                    <input type="email" id="add-email" name="email" required>
+                <div class="modal-body">
+                    <form id="add-user-form">
+                        <div class="mb-3">
+                            <label for="add-username" class="form-label">Nome de Usuário</label>
+                            <input type="text" class="form-control" id="add-username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="add-email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-endereco" class="form-label">Endereço</label>
+                            <input type="text" class="form-control" id="add-endereco" name="endereco">
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-celular" class="form-label">Celular</label>
+                            <input type="text" class="form-control" id="add-celular" name="celular">
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-password" class="form-label">Senha</label>
+                            <input type="password" class="form-control" id="add-password" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="add-designacao" class="form-label">Designação</label>
+                            <select class="form-select" id="add-designacao" name="designacao" required>
+                                <option value="Superintendente de Serviço">Superintendente de Serviço</option>
+                                <option value="Superintendente de Território">Superintendente de Território</option>
+                                <option value="Dirigente">Dirigente</option>
+                                <option value="Publicador">Publicador</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i> Adicionar
+                            Usuário</button>
+                    </form>
                 </div>
-
-                <div class="form-group">
-                    <label for="add-endereco">Endereço:</label>
-                    <input type="text" id="add-endereco" name="endereco">
-                </div>
-
-                <div class="form-group">
-                    <label for="add-celular">Celular:</label>
-                    <input type="text" id="add-celular" name="celular">
-                </div>
-
-                <div class="form-group">
-                    <label for="add-password">Senha:</label>
-                    <input type="password" id="add-password" name="password" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="add-designacao">Designação:</label>
-                    <select id="add-designacao" name="designacao" required>
-                        <option value="Superintendente de Serviço">Superintendente de Serviço</option>
-                        <option value="Superintendente de Território">Superintendente de Território</option>
-                        <option value="Dirigente">Dirigente</option>
-                        <option value="Publicador">Publicador</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Adicionar
-                    Usuário</button>
-            </form>
+            </div>
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts do Bootstrap e dependências -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-qQ0E8ZC7oE12kivYFBpEgoF8S3UthJb6bplsu4tIt3mM7grfCTkHcIuGhsjV0NBL" crossorigin="anonymous">
+        </script>
+    <!-- Script personalizado -->
     <script src="js/dashboard.js"></script>
+    <!-- Google Maps API -->
     <script
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAwvAt4l0Pkb1c52FLUE-ttVxm4YZ9J8M&libraries=drawing,geometry&callback=initMap">
         </script>

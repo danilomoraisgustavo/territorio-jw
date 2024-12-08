@@ -322,6 +322,14 @@ body {
     background-color: #c82333;
 }
 
+.btn-info {
+    background-color: var(--info-color);
+}
+
+.btn-info:hover {
+    background-color: #138496;
+}
+
 /* Tabela de Usuários */
 #users-table,
 #territorios-table {
@@ -532,6 +540,544 @@ body {
 
 .tab-content.active {
     display: block;
+}
+
+/* Export Dropdown */
+.export-container {
+    position: relative;
+    display: inline-block;
+    margin-top: 20px;
+}
+
+.export-toggle-btn {
+    background-color: var(--info-color);
+    color: var(--white-color);
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.export-toggle-btn i {
+    margin-right: 5px;
+}
+
+.export-dropdown {
+    display: none;
+    position: absolute;
+    background-color: var(--white-color);
+    min-width: 160px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 5px var(--card-shadow);
+    z-index: 999;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.export-dropdown a {
+    color: var(--dark-color);
+    padding: 10px 15px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: background-color var(--transition-speed);
+}
+
+.export-dropdown a i {
+    margin-right: 10px;
+}
+
+.export-dropdown a:hover {
+    background-color: var(--light-color);
+}
+
+.export-container.active .export-dropdown {
+    display: block;
+}
+
+/* Map */
+#map {
+    height: 500px;
+    width: 100%;
+    margin-top: 20px;
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+}
+
+/* Formulário de Cadastro de Território */
+#cadastro-territorio-form .form-group {
+    margin-bottom: 15px;
+}
+
+.drawing-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* Scrollbar Personalizada */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+}
+
+/* Bootstrap Overrides and Custom Styles */
+
+/* Sidebar */
+#sidebar-wrapper {
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
+}
+
+#sidebar-wrapper .list-group-item {
+    border: none;
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+
+#sidebar-wrapper .list-group-item:hover,
+#sidebar-wrapper .list-group-item.active {
+    background-color: var(--secondary-color);
+    color: var(--white-color);
+}
+
+/* Page Content */
+#page-content-wrapper {
+    width: 100%;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+/* Conteúdo Principal */
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 2px 5px var(--card-shadow);
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px var(--card-shadow);
+}
+
+/* Tabelas */
+.table th {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+
+.table-primary th {
+    background-color: var(--primary-color) !important;
+}
+
+.table-success th {
+    background-color: var(--success-color) !important;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Modais */
+.modal-content {
+    border-radius: 10px;
+}
+
+.modal-header {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+/* Botões Personalizados */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-secondary:hover {
+    background-color: #6a42a1;
+    border-color: #6a42a1;
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.btn-info {
+    background-color: var(--info-color);
+    border-color: var(--info-color);
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+}
+
+/* Botões de ações nas tabelas */
+.action-btn {
+    padding: 5px 10px;
+    margin-right: 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--white-color);
+    transition: background-color var(--transition-speed);
+    font-size: 0.8rem;
+}
+
+.action-btn.edit-btn {
+    background-color: var(--success-color);
+}
+
+.action-btn.edit-btn:hover {
+    background-color: #218838;
+}
+
+.action-btn.delete-btn {
+    background-color: var(--danger-color);
+}
+
+.action-btn.delete-btn:hover {
+    background-color: #c82333;
+}
+
+.action-btn.accept-btn {
+    background-color: var(--info-color);
+}
+
+.action-btn.accept-btn:hover {
+    background-color: #138496;
+}
+
+.action-btn.restrict-btn {
+    background-color: var(--warning-color);
+}
+
+.action-btn.restrict-btn:hover {
+    background-color: #e0a800;
+}
+
+/* Export Dropdown */
+.export-container {
+    position: relative;
+    display: inline-block;
+    margin-top: 20px;
+}
+
+.export-toggle-btn {
+    background-color: var(--info-color);
+    color: var(--white-color);
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.export-toggle-btn i {
+    margin-right: 5px;
+}
+
+.export-dropdown {
+    display: none;
+    position: absolute;
+    background-color: var(--white-color);
+    min-width: 160px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 5px var(--card-shadow);
+    z-index: 999;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.export-dropdown a {
+    color: var(--dark-color);
+    padding: 10px 15px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: background-color var(--transition-speed);
+}
+
+.export-dropdown a i {
+    margin-right: 10px;
+}
+
+.export-dropdown a:hover {
+    background-color: var(--light-color);
+}
+
+.export-container.active .export-dropdown {
+    display: block;
+}
+
+/* Map */
+#map {
+    height: 500px;
+    width: 100%;
+    margin-top: 20px;
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+}
+
+/* Formulário de Cadastro de Território */
+#cadastro-territorio-form .form-group {
+    margin-bottom: 15px;
+}
+
+.drawing-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* Scrollbar Personalizada */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+}
+
+/* Bootstrap Overrides and Custom Styles */
+
+/* Sidebar */
+#sidebar-wrapper {
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
+}
+
+#sidebar-wrapper .list-group-item {
+    border: none;
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+
+#sidebar-wrapper .list-group-item:hover,
+#sidebar-wrapper .list-group-item.active {
+    background-color: var(--secondary-color);
+    color: var(--white-color);
+}
+
+/* Page Content */
+#page-content-wrapper {
+    width: 100%;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+/* Conteúdo Principal */
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 2px 5px var(--card-shadow);
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px var(--card-shadow);
+}
+
+/* Tabelas */
+.table th {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+
+.table-primary th {
+    background-color: var(--primary-color) !important;
+}
+
+.table-success th {
+    background-color: var(--success-color) !important;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Modais */
+.modal-content {
+    border-radius: 10px;
+}
+
+.modal-header {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+/* Botões Personalizados */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-secondary:hover {
+    background-color: #6a42a1;
+    border-color: #6a42a1;
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.btn-info {
+    background-color: var(--info-color);
+    border-color: var(--info-color);
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+}
+
+/* Botões de ações nas tabelas */
+.action-btn {
+    padding: 5px 10px;
+    margin-right: 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--white-color);
+    transition: background-color var(--transition-speed);
+    font-size: 0.8rem;
+}
+
+.action-btn.edit-btn {
+    background-color: var(--success-color);
+}
+
+.action-btn.edit-btn:hover {
+    background-color: #218838;
+}
+
+.action-btn.delete-btn {
+    background-color: var(--danger-color);
+}
+
+.action-btn.delete-btn:hover {
+    background-color: #c82333;
+}
+
+.action-btn.accept-btn {
+    background-color: var(--info-color);
+}
+
+.action-btn.accept-btn:hover {
+    background-color: #138496;
+}
+
+.action-btn.restrict-btn {
+    background-color: var(--warning-color);
+}
+
+.action-btn.restrict-btn:hover {
+    background-color: #e0a800;
 }
 
 /* Export Dropdown */

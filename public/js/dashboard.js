@@ -148,6 +148,7 @@ function deleteShape(shape) {
 document.addEventListener('DOMContentLoaded', () => {
     let currentUserDesignacao = '';
 
+    // Fetch user info
     fetch('/user-info')
         .then(response => {
             if (!response.ok) {
@@ -174,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(error => console.error('Erro ao obter informações do usuário:', error));
 
+    // Logout
     document.getElementById('logout-btn').addEventListener('click', () => {
         fetch('/logout', { method: 'POST' })
             .then(() => {
@@ -182,45 +184,67 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Erro ao fazer logout:', error));
     });
 
-    const toggleBtn = document.querySelector('.toggle-btn');
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.querySelector('.main-content');
-
-    toggleBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('active');
+    // Sidebar toggle button (for Bootstrap)
+    const menuToggle = document.getElementById("menu-toggle");
+    const wrapper = document.getElementById("wrapper");
+    menuToggle.addEventListener("click", function () {
+        wrapper.classList.toggle("toggled");
     });
 
-    const navLinks = document.querySelectorAll('.sidebar nav ul li a');
-    const sections = document.querySelectorAll('.section');
+    // Navegação entre seções
+    const sidebarLinks = document.querySelectorAll("#sidebar-wrapper .list-group-item");
+    const sections = document.querySelectorAll(".section");
 
-    navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
+    sidebarLinks.forEach(link => {
+        link.addEventListener("click", function (e) {
             e.preventDefault();
-            navLinks.forEach(item => item.classList.remove('active'));
-            link.classList.add('active');
-            sections.forEach(section => section.classList.remove('active'));
-            const target = link.getAttribute('data-target');
-            const targetSection = document.getElementById(target);
+            // Remove active class from all links
+            sidebarLinks.forEach(l => l.classList.remove("active"));
+            // Add active class to the clicked link
+            this.classList.add("active");
 
-            if (targetSection) {
-                targetSection.classList.add('active');
-                if (target === 'usuarios') {
-                    loadUsers();
-                }
+            // Hide all sections
+            sections.forEach(section => section.classList.remove("active"));
+            // Show the targeted section
+            const target = this.getAttribute("data-target");
+            document.getElementById(target).classList.add("active");
+            document.getElementById(target).classList.remove("d-none");
+            document.getElementById(target).classList.remove("d-none");
+
+            // If section is 'usuarios', load users
+            if (target === 'usuarios') {
+                loadUsers();
             }
 
+            // If section is 'territorio', reset the tabs
+            if (target === 'territorio') {
+                const territoryTab = new bootstrap.Tab(document.querySelector('#cadastro-tab'));
+                territoryTab.show();
+            }
+
+            // Close sidebar on small screens after selection
             if (window.innerWidth <= 768) {
-                sidebar.classList.remove('active');
+                wrapper.classList.remove("toggled");
             }
         });
     });
 
-    mainContent.addEventListener('click', () => {
-        if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
-            sidebar.classList.remove('active');
-        }
+    // Fechar Modais
+    document.querySelectorAll('.modal .btn-close').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modal = bootstrap.Modal.getInstance(btn.closest('.modal'));
+            modal.hide();
+        });
     });
 
+    // Abrir Modal de Adicionar Usuário
+    const addUserBtn = document.getElementById("add-user-btn");
+    const addUserModal = new bootstrap.Modal(document.getElementById('add-user-modal'));
+    addUserBtn?.addEventListener('click', () => {
+        addUserModal.show();
+    });
+
+    // Carregar total de usuários
     function updateTotalUsuarios() {
         console.log('Fazendo requisição para obter o total de usuários');
         fetch('/api/users/count', {
@@ -239,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Erro ao obter total de usuários:', error));
     }
 
+    // Carregar usuários
     function loadUsers() {
         console.log('Carregando usuários');
         fetch('/api/users', {
@@ -256,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tbody.innerHTML = '';
 
                 data.forEach(user => {
-                    const tr = document.createElement('tr');
+                    const tr = document.createElement("tr");
                     tr.innerHTML = `
                         <td>${user.id}</td>
                         <td>${user.username}</td>
@@ -281,6 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Erro ao carregar usuários:', error));
     }
 
+    // Adicionar eventos aos botões de ação dos usuários
     function addUserActionEvents() {
         const editButtons = document.querySelectorAll('.edit-btn');
         editButtons.forEach(button => {
@@ -315,6 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Abrir modal de edição de usuário
     function openEditModal(userId) {
         console.log(`Abrindo modal de edição para o usuário ID ${userId}`);
         fetch(`/api/users/${userId}`)
@@ -332,12 +359,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('edit-endereco').value = user.endereco || '';
                     document.getElementById('edit-celular').value = user.celular || '';
                     document.getElementById('edit-designacao').value = user.designacao;
-                    document.getElementById('edit-user-modal').style.display = 'block';
+                    const editUserModal = new bootstrap.Modal(document.getElementById('edit-user-modal'));
+                    editUserModal.show();
                 }
             })
             .catch(error => console.error('Erro ao buscar usuário:', error));
     }
 
+    // Excluir usuário
     function deleteUser(userId) {
         if (confirm('Tem certeza de que deseja excluir este usuário?')) {
             console.log(`Excluindo usuário ID ${userId}`);
@@ -357,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Alterar status do usuário (aceitar ou restringir)
     function changeUserStatus(userId, accept) {
         const endpoint = accept ? `/api/users/${userId}/accept` : `/api/users/${userId}/restrict`;
         const action = accept ? 'aceitar' : 'restringir';
@@ -379,23 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const closeButtons = document.querySelectorAll('.close-btn');
-    closeButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            btn.parentElement.parentElement.style.display = 'none';
-        });
-    });
-
-    window.addEventListener('click', (event) => {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
-        }
-    });
-
-    document.getElementById('add-user-btn')?.addEventListener('click', () => {
-        document.getElementById('add-user-modal').style.display = 'block';
-    });
-
+    // Evento de submissão do formulário de adicionar usuário
     document.getElementById('add-user-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
         const username = document.getElementById('add-username').value;
@@ -421,13 +435,15 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 alert(data.message);
                 document.getElementById('add-user-form').reset();
-                document.getElementById('add-user-modal').style.display = 'none';
+                const addUserModal = bootstrap.Modal.getInstance(document.getElementById('add-user-modal'));
+                addUserModal.hide();
                 loadUsers();
                 updateTotalUsuarios();
             })
             .catch(error => console.error('Erro ao adicionar usuário:', error));
     });
 
+    // Evento de submissão do formulário de editar usuário
     document.getElementById('edit-user-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
         const userId = document.getElementById('edit-user-id').value;
@@ -453,13 +469,15 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 alert(data.message);
                 document.getElementById('edit-user-form').reset();
-                document.getElementById('edit-user-modal').style.display = 'none';
+                const editUserModal = bootstrap.Modal.getInstance(document.getElementById('edit-user-modal'));
+                editUserModal.hide();
                 loadUsers();
                 updateTotalUsuarios();
             })
             .catch(error => console.error('Erro ao editar usuário:', error));
     });
 
+    // Inicializar
     function initialize() {
         const activeSection = document.querySelector('.section.active');
         if (activeSection.id === 'usuarios') {
@@ -470,24 +488,18 @@ document.addEventListener('DOMContentLoaded', () => {
     initialize();
 
     // Seção de Território
-    const tabLinks = document.querySelectorAll('.tab-link');
-    const tabContents = document.querySelectorAll('.tab-content');
+    const territorioTab = document.querySelectorAll('.nav-link[data-bs-toggle="tab"]');
 
-    tabLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            tabLinks.forEach(link => link.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
-
-            link.classList.add('active');
-            const tab = link.getAttribute('data-tab');
-            document.getElementById(tab).classList.add('active');
-
-            if (tab === 'gerenciamento') {
+    territorioTab.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', (event) => {
+            const target = event.target.getAttribute('data-bs-target');
+            if (target === '#gerenciamento') {
                 loadTerritorios();
             }
         });
     });
 
+    // Eventos para a seção de Território
     document.getElementById('draw-territory-btn').addEventListener('click', () => {
         if (isEditing || isDeleting) {
             toggleEditingMode(false);
@@ -577,6 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Salvar Território
     document.getElementById('save-territorio-btn').addEventListener('click', () => {
         const identificador = document.getElementById('territorio-id').value.trim();
         const bairro = document.getElementById('territorio-bairro').value.trim();
@@ -648,6 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
+    // Salvar Alterações no Território
     document.getElementById('save-edits-btn').addEventListener('click', () => {
         if (!territoryShape) {
             alert('Nenhum território para salvar.');
@@ -693,6 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
+    // Carregar territórios
     function loadTerritorios() {
         console.log('Carregando territórios');
         fetch('/api/territorios', {
@@ -727,6 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Erro ao carregar territórios:', error));
     }
 
+    // Adicionar eventos aos botões de ação dos territórios
     function addTerritorioActionEvents() {
         const viewButtons = document.querySelectorAll('.view-btn');
         viewButtons.forEach(button => {
@@ -745,6 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Visualizar território no mapa
     function viewTerritorio(territorioId) {
         fetch(`/api/territorios/${territorioId}`, {
             method: 'GET'
@@ -764,6 +781,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
+    // Mostrar território no mapa
     function showTerritorioOnMap(data) {
         const territorio = data.territorio;
         const lotes = data.lotes;
@@ -832,12 +850,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         map.fitBounds(bounds);
 
-        tabLinks.forEach(link => link.classList.remove('active'));
-        tabContents.forEach(content => content.classList.remove('active'));
-        document.querySelector('.tab-link[data-tab="cadastro"]').classList.add('active');
-        document.getElementById('cadastro').classList.add('active');
+        // Resetar as abas para Cadastro
+        const territorioTabLinks = document.querySelectorAll('.nav-link[data-bs-toggle="tab"]');
+        territorioTabLinks.forEach(link => link.classList.remove('active'));
+        const cadastroTab = document.querySelector('#cadastro-tab');
+        const cadastroContent = document.querySelector('#cadastro');
+        cadastroTab.classList.add('active');
+        cadastroContent.classList.add('show', 'active');
     }
 
+    // Atualizar status do lote
     function updateLoteStatus(loteId, newStatus) {
         fetch(`/api/lotes/${loteId}/status`, {
             method: 'PUT',
@@ -860,6 +882,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
+    // Excluir território
     function deleteTerritorio(territorioId) {
         if (confirm('Tem certeza de que deseja excluir este território?')) {
             fetch(`/api/territorios/${territorioId}`, { method: 'DELETE' })
