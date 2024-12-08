@@ -830,7 +830,15 @@ document.addEventListener('DOMContentLoaded', () => {
         territoryCoords.forEach(coord => {
             bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
         });
-        map.fitBounds(bounds);
+
+        map.fitBounds(bounds, { padding: 50 });
+
+        // Definir um nível de zoom mínimo após ajustar os limites
+        const currentZoom = map.getZoom();
+        const minZoom = 14; // Defina o nível de zoom desejado
+        if (currentZoom < minZoom) {
+            map.setZoom(minZoom);
+        }
 
         tabLinks.forEach(link => link.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
