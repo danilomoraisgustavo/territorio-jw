@@ -75,8 +75,12 @@ function initMap() {
                 newShape.setMap(null);
                 // Atualizar a cor para indicar erro
                 // Como o lote já foi removido, não há como mudar a cor. Alternativamente, você pode adicionar uma notificação visual.
+                alert('O lote está fora do território principal.');
             } else {
                 lotShapes.push(newShape);
+                // Definir o status inicial do lote, se necessário
+                newShape.status = true; // Exemplo: ativo por padrão
+                updateShapeColor(newShape);
             }
         }
 
@@ -91,6 +95,7 @@ function initMap() {
         });
 
         // Atualizar a cor do território ou lote baseado no status
+        // Certifique-se de definir a propriedade 'status' ao criar os shapes
         updateShapeColor(newShape);
     });
 }
@@ -286,8 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="action-btn edit-btn" data-id="${user.id}"><i class="fas fa-edit"></i> Editar</button>
                             <button class="action-btn delete-btn" data-id="${user.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
                             ${user.init
-                            ? `<button class="action-btn restrict-btn" data-id="${user.id}"><i class="fas fa-lock"></i> Restringir</button>`
-                            : `<button class="action-btn accept-btn" data-id="${user.id}"><i class="fas fa-unlock"></i> Aceitar</button>`}
+                                ? `<button class="action-btn restrict-btn" data-id="${user.id}"><i class="fas fa-lock"></i> Restringir</button>`
+                                : `<button class="action-btn accept-btn" data-id="${user.id}"><i class="fas fa-unlock"></i> Aceitar</button>`}
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -821,7 +826,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         newTerritoryShape.addListener('click', () => {
             if (isDeleting) {
-                deleteShape(newTerritoryShape);
+                deleteShape(newTerritorioShape);
             } else if (isEditing) {
                 selectShape(newTerritoryShape);
             }
@@ -852,6 +857,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     toggleLoteStatus(lotShape);
                 }
             });
+
+            // Definir o status do lote com base nos dados recebidos
+            lotShape.status = lote.status;
+            updateShapeColor(lotShape);
 
             lotShapes.push(lotShape);
         });
@@ -895,6 +904,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 loteShape.setOptions({
                     fillColor: newStatus ? '#32CD32' : '#FF0000'
                 });
+                // Atualizar a propriedade 'status' do lote
+                loteShape.status = newStatus;
             })
             .catch(error => {
                 console.error('Erro ao atualizar status do lote:', error);
@@ -903,7 +914,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function isLoteAtivo(loteShape) {
-        return loteShape.getOptions().fillColor === '#32CD32';
+        return loteShape.get('fillColor') === '#32CD32';
     }
 
     function deleteTerritorio(territorioId) {
@@ -954,4 +965,15 @@ document.addEventListener('DOMContentLoaded', () => {
             mapGerenciamento.fitBounds(bounds);
         }
     }
-})
+
+    // Função para atualizar a cor do shape baseado no status
+    function updateShapeColor(shape) {
+        if (shape.type === 'territory') {
+            const color = shape.status ? '#32CD32' : '#FF0000';
+            shape.setOptions({ fillColor: color });
+        } else if (shape.type === 'lot') {
+            const color = shape.status ? '#32CD32' : '#FF0000';
+            shape.setOptions({ fillColor: color });
+        }
+    }
+});
