@@ -693,3 +693,12 @@ select {
         font-size: 1.2rem;
     }
 }
+
+#map2 {
+    height: 500px;
+    width: 100%;
+    margin: 20px 0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}

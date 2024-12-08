@@ -1,19 +1,24 @@
 // dashboard.js
 
-// Defina as variáveis no escopo global
+// Variáveis globais
 let map;
 let drawingManager;
-let territoryShape = null; // Armazena o polígono do território principal
-let lotShapes = []; // Armazena os polígonos dos lotes
+let territoryShape = null;
+let lotShapes = [];
 let isDrawingTerritory = false;
 let isDrawingLots = false;
-let isEditing = false; // Estado para controle de edição
-let isDeleting = false; // Estado para controle de apagar
+let isEditing = false;
+let isDeleting = false;
 let selectedShape = null;
 
-// Função initMap no escopo global
+// Variáveis para o segundo mapa
+let map2;
+let allTerritoryShapes = [];
+let allLotShapes = [];
+
+// Função initMap
 function initMap() {
-    console.log('Inicializando o mapa');
+    console.log('Inicializando o mapa principal');
     map = new google.maps.Map(document.getElementById('map'), {
         center: { lat: -6.530239, lng: -49.851626 },
         zoom: 12
@@ -56,11 +61,16 @@ function initMap() {
             newShape.type = 'lot';
 
             let isValidLot = true;
-            newShape.getPath().forEach(function (point) {
-                if (!google.maps.geometry.poly.containsLocation(point, territoryShape)) {
-                    isValidLot = false;
+            const path = newShape.getPath();
+            if (territoryShape && path) {
+                for (let i = 0; i < path.getLength(); i++) {
+                    const point = path.getAt(i);
+                    if (!google.maps.geometry.poly.containsLocation(point, territoryShape)) {
+                        isValidLot = false;
+                        break;
+                    }
                 }
-            });
+            }
 
             if (!isValidLot) {
                 alert('O lote desenhado está fora do território. Por favor, desenhe o lote dentro do território.');
@@ -78,6 +88,110 @@ function initMap() {
             }
         });
     });
+
+    // Inicializa o segundo mapa após um pequeno delay
+    setTimeout(() => {
+        initMap2();
+    }, 1000);
+}
+
+function initMap2() {
+    console.log('Inicializando o mapa de visualização (map2)');
+    const map2Element = document.getElementById('map2');
+    if (map2Element) {
+        map2 = new google.maps.Map(map2Element, {
+            center: { lat: -6.530239, lng: -49.851626 },
+            zoom: 12
+        });
+    } else {
+        console.error("Elemento #map2 não encontrado no DOM.");
+    }
+}
+
+function loadAllTerritoriesOnMap2() {
+    // Limpa shapes antigos no map2
+    allTerritoryShapes.forEach(shape => shape.setMap(null));
+    allLotShapes.forEach(shape => shape.setMap(null));
+    allTerritoryShapes = [];
+    allLotShapes = [];
+
+    fetch('/api/territorios-map2', { method: 'GET' })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erro: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!Array.isArray(data)) {
+                console.error('Os dados retornados de /api/territorios não são um array:', data);
+                return;
+            }
+
+            const bounds = new google.maps.LatLngBounds();
+
+            data.forEach(territorio => {
+                if (!Array.isArray(territorio.territory)) {
+                    console.error('territorio.territory não é um array ou está ausente:', territorio);
+                    return;
+                }
+
+                const territoryColor = territorio.status ? '#32CD32' : 'rgba(255, 0, 0, 0.3)';
+                const territoryCoords = territorio.territory;
+
+                const tShape = new google.maps.Polygon({
+                    paths: territoryCoords,
+                    fillColor: territoryColor,
+                    fillOpacity: 0.5,
+                    strokeWeight: 2,
+                    map: map2
+                });
+
+                allTerritoryShapes.push(tShape);
+
+                territoryCoords.forEach(coord => {
+                    if (coord && typeof coord.lat === 'number' && typeof coord.lng === 'number') {
+                        bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+                    }
+                });
+
+                if (Array.isArray(territorio.lotes)) {
+                    territorio.lotes.forEach(lote => {
+                        if (!Array.isArray(lote.coordenadas)) {
+                            console.error('lote.coordenadas não é um array ou está ausente:', lote);
+                            return;
+                        }
+
+                        const lotColor = lote.status ? '#32CD32' : '#FF0000';
+                        const lShape = new google.maps.Polygon({
+                            paths: lote.coordenadas,
+                            fillColor: lotColor,
+                            fillOpacity: 0.5,
+                            strokeWeight: 2,
+                            map: map2
+                        });
+
+                        allLotShapes.push(lShape);
+
+                        lote.coordenadas.forEach(coord => {
+                            if (coord && typeof coord.lat === 'number' && typeof coord.lng === 'number') {
+                                bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+                            }
+                        });
+                    });
+                }
+            });
+
+            if (data.length > 0) {
+                map2.fitBounds(bounds, { padding: 50 });
+                const currentZoom = map2.getZoom();
+                const minZoom = 16;
+                if (currentZoom < minZoom) {
+                    map2.setZoom(minZoom);
+                }
+            }
+        })
+        .catch(error => console.error('Erro ao carregar territórios no map2:', error));
 }
 
 function setupPolygonDeleteListener(polygon) {
@@ -101,7 +215,7 @@ function deleteShape(shape) {
 
     let confirmDelete = confirm('Tem certeza de que deseja apagar este polígono?');
     if (confirmDelete) {
-        if (shape.type === 'territory') {
+        if (shape.type === 'territory' && shape.territorioId) {
             fetch(`/api/territorios/${shape.territorioId}`, { method: 'DELETE' })
                 .then(response => {
                     if (!response.ok) {
@@ -124,7 +238,7 @@ function deleteShape(shape) {
                     console.error('Erro ao excluir território:', error);
                     alert('Erro ao excluir território. Tente novamente.');
                 });
-        } else if (shape.type === 'lot') {
+        } else if (shape.type === 'lot' && shape.loteId) {
             fetch(`/api/lotes/${shape.loteId}`, { method: 'DELETE' })
                 .then(response => {
                     if (!response.ok) {
@@ -141,6 +255,18 @@ function deleteShape(shape) {
                     console.error('Erro ao excluir lote:', error);
                     alert('Erro ao excluir lote. Tente novamente.');
                 });
+        } else {
+            // Caso o shape não tenha um ID (porque não foi salvo no backend), simplesmente removemos do mapa
+            shape.setMap(null);
+            if (shape.type === 'territory') {
+                territoryShape = null;
+                lotShapes.forEach(l => l.setMap(null));
+                lotShapes = [];
+                document.getElementById('draw-territory-btn').disabled = false;
+                document.getElementById('draw-lots-btn').disabled = true;
+            } else if (shape.type === 'lot') {
+                lotShapes = lotShapes.filter(l => l !== shape);
+            }
         }
     }
 }
@@ -163,12 +289,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentUserDesignacao = data.designacao;
                 console.log(`Designação do usuário: ${data.designacao}`);
                 if (!['Administrador', 'Superintendente de Serviço', 'Superintendente de Território'].includes(data.designacao)) {
-                    document.querySelector('a[data-target="usuarios"]').parentElement.style.display = 'none';
+                    const userMenu = document.querySelector('a[data-target="usuarios"]');
+                    if (userMenu && userMenu.parentElement) {
+                        userMenu.parentElement.style.display = 'none';
+                    }
                 }
             }
             updateTotalUsuarios();
             const activeSection = document.querySelector('.section.active');
-            if (activeSection.id === 'usuarios') {
+            if (activeSection && activeSection.id === 'usuarios') {
                 loadUsers();
             }
         })
@@ -223,9 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateTotalUsuarios() {
         console.log('Fazendo requisição para obter o total de usuários');
-        fetch('/api/users/count', {
-            method: 'GET'
-        })
+        fetch('/api/users/count', { method: 'GET' })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erro: ${response.status}`);
@@ -241,9 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadUsers() {
         console.log('Carregando usuários');
-        fetch('/api/users', {
-            method: 'GET'
-        })
+        fetch('/api/users', { method: 'GET' })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erro: ${response.status}`);
@@ -253,7 +378,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 console.log('Usuários recebidos:', data);
                 const tbody = document.querySelector('#users-table tbody');
+                if (!tbody) return;
                 tbody.innerHTML = '';
+
+                if (!Array.isArray(data)) {
+                    console.error('Dados de usuários não são um array:', data);
+                    return;
+                }
 
                 data.forEach(user => {
                     const tr = document.createElement('tr');
@@ -371,10 +502,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return response.json();
                 })
                 .then(data => {
-                    // Removemos o alert aqui
-                    // alert(data.message);
-
-                    // Atualizamos a cor do botão ou outro elemento, se necessário
                     loadUsers();
                     updateTotalUsuarios();
                 })
@@ -465,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initialize() {
         const activeSection = document.querySelector('.section.active');
-        if (activeSection.id === 'usuarios') {
+        if (activeSection && activeSection.id === 'usuarios') {
             loadUsers();
         }
     }
@@ -483,10 +610,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             link.classList.add('active');
             const tab = link.getAttribute('data-tab');
-            document.getElementById(tab).classList.add('active');
+            const tabContent = document.getElementById(tab);
+            if (tabContent) {
+                tabContent.classList.add('active');
+            }
 
             if (tab === 'gerenciamento') {
                 loadTerritorios();
+                // Carregar todos os territórios no map2 quando a aba gerenciamento for ativada
+                loadAllTerritoriesOnMap2();
             }
         });
     });
@@ -598,23 +730,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let territoryCoordinates = [];
-        territoryShape.getPath().forEach(point => {
-            territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
+        if (territoryShape.getPath()) {
+            const path = territoryShape.getPath();
+            for (let i = 0; i < path.getLength(); i++) {
+                const point = path.getAt(i);
+                territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
+            }
+        }
+
+        let lotsData = [];
+        lotShapes.forEach(shape => {
+            if (shape.getPath()) {
+                let shapeCoordinates = [];
+                const path = shape.getPath();
+                for (let i = 0; i < path.getLength(); i++) {
+                    const point = path.getAt(i);
+                    shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
+                }
+                lotsData.push(shapeCoordinates);
+            }
         });
 
-        let lotsData = lotShapes.map(shape => {
-            let shapeCoordinates = [];
-            shape.getPath().forEach(point => {
-                shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
-            });
-            return shapeCoordinates;
-        });
-
-        console.log('Dados a serem enviados:');
-        console.log('Identificador:', identificador);
-        console.log('Bairro:', bairro);
-        console.log('Territory:', territoryCoordinates);
-        console.log('Lots:', lotsData);
+        console.log('Dados a serem enviados:', { identificador, bairro, territory: territoryCoordinates, lots: lotsData });
 
         fetch('/api/territorios', {
             method: 'POST',
@@ -658,15 +795,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let territoryCoordinates = [];
-        territoryShape.getPath().forEach(point => {
-            territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
-        });
+        if (territoryShape.getPath()) {
+            const path = territoryShape.getPath();
+            for (let i = 0; i < path.getLength(); i++) {
+                const point = path.getAt(i);
+                territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
+            }
+        }
 
         let lotsData = lotShapes.map(shape => {
             let shapeCoordinates = [];
-            shape.getPath().forEach(point => {
-                shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
-            });
+            if (shape.getPath()) {
+                const path = shape.getPath();
+                for (let i = 0; i < path.getLength(); i++) {
+                    const point = path.getAt(i);
+                    shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
+                }
+            }
             return {
                 id: shape.loteId,
                 coordenadas: shapeCoordinates
@@ -698,9 +843,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadTerritorios() {
         console.log('Carregando territórios');
-        fetch('/api/territorios', {
-            method: 'GET'
-        })
+        fetch('/api/territorios', { method: 'GET' })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erro: ${response.status}`);
@@ -709,7 +852,13 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 const tbody = document.querySelector('#territorios-table tbody');
+                if (!tbody) return;
                 tbody.innerHTML = '';
+
+                if (!Array.isArray(data)) {
+                    console.error('Os territórios não são retornados como array:', data);
+                    return;
+                }
 
                 data.forEach(territorio => {
                     const tr = document.createElement('tr');
@@ -749,9 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function viewTerritorio(territorioId) {
-        fetch(`/api/territorios/${territorioId}`, {
-            method: 'GET'
-        })
+        fetch(`/api/territorios/${territorioId}`, { method: 'GET' })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erro ao buscar território: ${response.status}`);
@@ -759,6 +906,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(data => {
+                // Verificação dos dados retornados
+                if (!data || !data.territorio || !Array.isArray(data.territorio.territory)) {
+                    console.error('Dados do território inválidos ou territory não é um array:', data);
+                    alert('Não foi possível visualizar o território. Dados inválidos retornados do servidor.');
+                    return;
+                }
+
+                if (!Array.isArray(data.lotes)) {
+                    console.warn('lotes não é um array ou está ausente. Continuando sem lotes.');
+                }
+
                 showTerritorioOnMap(data);
             })
             .catch(error => {
@@ -769,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showTerritorioOnMap(data) {
         const territorio = data.territorio;
-        const lotes = data.lotes;
+        const lotes = Array.isArray(data.lotes) ? data.lotes : [];
 
         if (territoryShape) {
             territoryShape.setMap(null);
@@ -780,7 +938,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const territoryColor = territorio.status ? '#32CD32' : 'rgba(255, 0, 0, 0.3)';
         const territoryCoords = territorio.territory;
-        territoryShape = new google.maps.Polygon({
+
+        const tShape = new google.maps.Polygon({
             paths: territoryCoords,
             fillColor: territoryColor,
             fillOpacity: 0.5,
@@ -789,6 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
             map: map
         });
 
+        territoryShape = tShape;
         territoryShape.territorioId = territorio.id;
         territoryShape.type = 'territory';
         setupPolygonDeleteListener(territoryShape);
@@ -802,51 +962,62 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         lotes.forEach(lote => {
-            const lotColor = lote.status ? '#32CD32' : '#FF0000';
-            const lotShape = new google.maps.Polygon({
-                paths: lote.coordenadas,
-                fillColor: lotColor,
-                fillOpacity: 0.5,
-                strokeWeight: 2,
-                editable: isEditing,
-                map: map
-            });
+            if (Array.isArray(lote.coordenadas)) {
+                const lotColor = lote.status ? '#32CD32' : '#FF0000';
+                const lotShape = new google.maps.Polygon({
+                    paths: lote.coordenadas,
+                    fillColor: lotColor,
+                    fillOpacity: 0.5,
+                    strokeWeight: 2,
+                    editable: isEditing,
+                    map: map
+                });
 
-            lotShape.loteId = lote.id;
-            lotShape.type = 'lot';
-            setupPolygonDeleteListener(lotShape);
+                lotShape.loteId = lote.id;
+                lotShape.type = 'lot';
+                setupPolygonDeleteListener(lotShape);
 
-            lotShape.addListener('click', () => {
-                if (isDeleting) {
-                    deleteShape(lotShape);
-                } else if (isEditing) {
-                    selectShape(lotShape);
-                } else {
-                    updateLoteStatus(lote.id, !lote.status);
-                }
-            });
+                lotShape.addListener('click', () => {
+                    if (isDeleting) {
+                        deleteShape(lotShape);
+                    } else if (isEditing) {
+                        selectShape(lotShape);
+                    } else {
+                        updateLoteStatus(lote.id, !lote.status);
+                    }
+                });
 
-            lotShapes.push(lotShape);
+                lotShapes.push(lotShape);
+            } else {
+                console.error('Lote com coordenadas inválidas:', lote);
+            }
         });
 
         const bounds = new google.maps.LatLngBounds();
         territoryCoords.forEach(coord => {
-            bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+            if (coord && typeof coord.lat === 'number' && typeof coord.lng === 'number') {
+                bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+            }
         });
 
         map.fitBounds(bounds, { padding: 50 });
 
-        // Definir um nível de zoom mínimo após ajustar os limites
         const currentZoom = map.getZoom();
-        const minZoom = 16; // Defina o nível de zoom desejado
+        const minZoom = 16;
         if (currentZoom < minZoom) {
             map.setZoom(minZoom);
         }
 
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
         tabLinks.forEach(link => link.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
-        document.querySelector('.tab-link[data-tab="cadastro"]').classList.add('active');
-        document.getElementById('cadastro').classList.add('active');
+        const cadastroLink = document.querySelector('.tab-link[data-tab="cadastro"]');
+        const cadastroContent = document.getElementById('cadastro');
+        if (cadastroLink && cadastroContent) {
+            cadastroLink.classList.add('active');
+            cadastroContent.classList.add('active');
+        }
     }
 
     function updateLoteStatus(loteId, newStatus) {
@@ -862,19 +1033,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(data => {
-                // Removemos o alert aqui
-                // alert(data.message);
-
-                // Encontramos o polígono correspondente ao lote atualizado
                 const updatedLot = lotShapes.find(lot => lot.loteId === loteId);
                 if (updatedLot) {
-                    // Atualizamos a cor de preenchimento com base no novo status
                     updatedLot.setOptions({
                         fillColor: newStatus ? '#32CD32' : '#FF0000'
                     });
                 }
-
-                // Opcional: Atualizar outras propriedades ou elementos relacionados ao lote
             })
             .catch(error => console.error('Erro ao atualizar status do lote:', error));
     }
@@ -896,7 +1060,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Exportação do Território
     const exportContainer = document.querySelector('.export-container');
     const exportToggleBtn = document.querySelector('.export-toggle-btn');
     const exportDropdown = document.querySelector('.export-dropdown');

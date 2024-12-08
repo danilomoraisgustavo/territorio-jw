@@ -398,6 +398,50 @@ app.get('/api/territorios', authorizeTerritorioAccess, async (req, res) => {
     }
 });
 
+// Novo endpoint para fornecer dados completos dos territórios para o map2
+app.get('/api/territorios-map2', authorizeTerritorioAccess, async (req, res) => {
+    try {
+        // Busca todos os territórios do banco, incluindo o campo territory
+        const territorios = await dbAll('SELECT id, identificador, territory, status FROM territorios');
+
+        const results = [];
+        for (let territorio of territorios) {
+            let parsedTerritory = [];
+            if (territorio.territory) {
+                try {
+                    parsedTerritory = JSON.parse(territorio.territory);
+                } catch (e) {
+                    console.error('Erro ao parsear territory do território ID:', territorio.id, e);
+                }
+            }
+
+            const lotes = await dbAll('SELECT id, coordenadas, status FROM lotes WHERE territorio_id = ?', [territorio.id]);
+            for (let lote of lotes) {
+                try {
+                    lote.coordenadas = JSON.parse(lote.coordenadas);
+                } catch (e) {
+                    console.error('Erro ao parsear coordenadas do lote ID:', lote.id, e);
+                    lote.coordenadas = [];
+                }
+            }
+
+            results.push({
+                id: territorio.id,
+                identificador: territorio.identificador,
+                status: territorio.status,
+                territory: parsedTerritory,
+                lotes: lotes
+            });
+        }
+
+        res.json(results);
+    } catch (error) {
+        console.error('Erro ao buscar territórios (map2):', error);
+        res.status(500).json({ message: 'Erro ao buscar territórios (map2)' });
+    }
+});
+
+
 app.get('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) => {
     const territorioId = req.params.id;
     try {
