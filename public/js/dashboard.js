@@ -371,7 +371,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     return response.json();
                 })
                 .then(data => {
-                    alert(data.message);
+                    // Removemos o alert aqui
+                    // alert(data.message);
+
+                    // Atualizamos a cor do botão ou outro elemento, se necessário
                     loadUsers();
                     updateTotalUsuarios();
                 })
@@ -859,13 +862,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(data => {
-                alert(data.message);
-                viewTerritorio(territoryShape.territorioId);
+                // Removemos o alert aqui
+                // alert(data.message);
+
+                // Encontramos o polígono correspondente ao lote atualizado
+                const updatedLot = lotShapes.find(lot => lot.loteId === loteId);
+                if (updatedLot) {
+                    // Atualizamos a cor de preenchimento com base no novo status
+                    updatedLot.setOptions({
+                        fillColor: newStatus ? '#32CD32' : '#FF0000'
+                    });
+                }
+
+                // Opcional: Atualizar outras propriedades ou elementos relacionados ao lote
             })
-            .catch(error => {
-                console.error('Erro ao atualizar status do lote:', error);
-                alert('Erro ao atualizar status do lote. Tente novamente.');
-            });
+            .catch(error => console.error('Erro ao atualizar status do lote:', error));
     }
 
     function deleteTerritorio(territorioId) {
