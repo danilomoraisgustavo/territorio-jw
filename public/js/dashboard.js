@@ -176,20 +176,29 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => console.error('Erro ao obter informações do usuário:', error));
 
     // Logout
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        fetch('/logout', { method: 'POST' })
-            .then(() => {
-                window.location.href = '/';
-            })
-            .catch(error => console.error('Erro ao fazer logout:', error));
-    });
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            fetch('/logout', { method: 'POST' })
+                .then(() => {
+                    window.location.href = '/';
+                })
+                .catch(error => console.error('Erro ao fazer logout:', error));
+        });
+    } else {
+        console.error('Botão de logout não encontrado no DOM.');
+    }
 
     // Sidebar toggle button (for Bootstrap)
     const menuToggle = document.getElementById("menu-toggle");
     const wrapper = document.getElementById("wrapper");
-    menuToggle.addEventListener("click", function () {
-        wrapper.classList.toggle("toggled");
-    });
+    if (menuToggle) {
+        menuToggle.addEventListener("click", function () {
+            wrapper.classList.toggle("toggled");
+        });
+    } else {
+        console.error('Botão de toggle do menu não encontrado no DOM.');
+    }
 
     // Navegação entre seções
     const sidebarLinks = document.querySelectorAll("#sidebar-wrapper .list-group-item");
@@ -207,9 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
             sections.forEach(section => section.classList.remove("active"));
             // Show the targeted section
             const target = this.getAttribute("data-target");
-            document.getElementById(target).classList.add("active");
-            document.getElementById(target).classList.remove("d-none");
-            document.getElementById(target).classList.remove("d-none");
+            const targetSection = document.getElementById(target);
+            if (targetSection) {
+                targetSection.classList.add("active");
+                targetSection.classList.remove("d-none");
+            } else {
+                console.error(`Seção alvo "${target}" não encontrada no DOM.`);
+            }
 
             // If section is 'usuarios', load users
             if (target === 'usuarios') {
@@ -230,19 +243,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Fechar Modais
-    document.querySelectorAll('.modal .btn-close').forEach(btn => {
+    const closeModalButtons = document.querySelectorAll('.modal .btn-close');
+    closeModalButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-            const modal = bootstrap.Modal.getInstance(btn.closest('.modal'));
-            modal.hide();
+            const modalElement = btn.closest('.modal');
+            if (modalElement) {
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) {
+                    modal.hide();
+                }
+            }
         });
     });
 
     // Abrir Modal de Adicionar Usuário
     const addUserBtn = document.getElementById("add-user-btn");
-    const addUserModal = new bootstrap.Modal(document.getElementById('add-user-modal'));
-    addUserBtn?.addEventListener('click', () => {
-        addUserModal.show();
-    });
+    const addUserModalElement = document.getElementById('add-user-modal');
+    let addUserModal;
+    if (addUserBtn && addUserModalElement) {
+        addUserModal = new bootstrap.Modal(addUserModalElement);
+        addUserBtn.addEventListener('click', () => {
+            addUserModal.show();
+        });
+    } else {
+        console.error('Botão de adicionar usuário ou modal não encontrado no DOM.');
+    }
 
     // Carregar total de usuários
     function updateTotalUsuarios() {
@@ -258,7 +283,12 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 console.log('Total de usuários recebido:', data.count);
-                document.getElementById('total-usuarios').textContent = data.count;
+                const totalUsuariosElem = document.getElementById('total-usuarios');
+                if (totalUsuariosElem) {
+                    totalUsuariosElem.textContent = data.count;
+                } else {
+                    console.error('Elemento para total de usuários não encontrado no DOM.');
+                }
             })
             .catch(error => console.error('Erro ao obter total de usuários:', error));
     }
@@ -278,30 +308,34 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 console.log('Usuários recebidos:', data);
                 const tbody = document.querySelector('#users-table tbody');
-                tbody.innerHTML = '';
+                if (tbody) {
+                    tbody.innerHTML = '';
 
-                data.forEach(user => {
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td>${user.id}</td>
-                        <td>${user.username}</td>
-                        <td>${user.email}</td>
-                        <td>${user.endereco || '-'}</td>
-                        <td>${user.celular || '-'}</td>
-                        <td>${user.designacao}</td>
-                        <td>${user.init ? 'Ativo' : 'Restrito'}</td>
-                        <td>
-                            <button class="action-btn edit-btn" data-id="${user.id}"><i class="fas fa-edit"></i> Editar</button>
-                            <button class="action-btn delete-btn" data-id="${user.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
-                            ${user.init
-                            ? `<button class="action-btn restrict-btn" data-id="${user.id}"><i class="fas fa-lock"></i> Restringir</button>`
-                            : `<button class="action-btn accept-btn" data-id="${user.id}"><i class="fas fa-unlock"></i> Aceitar</button>`}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                    data.forEach(user => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.username}</td>
+                            <td>${user.email}</td>
+                            <td>${user.endereco || '-'}</td>
+                            <td>${user.celular || '-'}</td>
+                            <td>${user.designacao}</td>
+                            <td>${user.init ? 'Ativo' : 'Restrito'}</td>
+                            <td>
+                                <button class="action-btn edit-btn" data-id="${user.id}"><i class="fas fa-edit"></i> Editar</button>
+                                <button class="action-btn delete-btn" data-id="${user.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
+                                ${user.init
+                                ? `<button class="action-btn restrict-btn" data-id="${user.id}"><i class="fas fa-lock"></i> Restringir</button>`
+                                : `<button class="action-btn accept-btn" data-id="${user.id}"><i class="fas fa-unlock"></i> Aceitar</button>`}
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
 
-                addUserActionEvents();
+                    addUserActionEvents();
+                } else {
+                    console.error('Corpo da tabela de usuários não encontrado no DOM.');
+                }
             })
             .catch(error => console.error('Erro ao carregar usuários:', error));
     }
@@ -359,8 +393,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('edit-endereco').value = user.endereco || '';
                     document.getElementById('edit-celular').value = user.celular || '';
                     document.getElementById('edit-designacao').value = user.designacao;
-                    const editUserModal = new bootstrap.Modal(document.getElementById('edit-user-modal'));
-                    editUserModal.show();
+                    const editUserModalElement = document.getElementById('edit-user-modal');
+                    if (editUserModalElement) {
+                        const editUserModal = new bootstrap.Modal(editUserModalElement);
+                        editUserModal.show();
+                    } else {
+                        console.error('Modal de edição de usuário não encontrado no DOM.');
+                    }
                 }
             })
             .catch(error => console.error('Erro ao buscar usuário:', error));
@@ -410,77 +449,93 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Evento de submissão do formulário de adicionar usuário
-    document.getElementById('add-user-form')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('add-username').value;
-        const email = document.getElementById('add-email').value;
-        const endereco = document.getElementById('add-endereco').value;
-        const celular = document.getElementById('add-celular').value;
-        const password = document.getElementById('add-password').value;
-        const designacao = document.getElementById('add-designacao').value;
+    const addUserForm = document.getElementById('add-user-form');
+    if (addUserForm) {
+        addUserForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('add-username').value;
+            const email = document.getElementById('add-email').value;
+            const endereco = document.getElementById('add-endereco').value;
+            const celular = document.getElementById('add-celular').value;
+            const password = document.getElementById('add-password').value;
+            const designacao = document.getElementById('add-designacao').value;
 
-        console.log('Adicionando novo usuário');
+            console.log('Adicionando novo usuário');
 
-        fetch('/api/users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, endereco, celular, password, designacao })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro ao adicionar usuário: ${response.status}`);
-                }
-                return response.json();
+            fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, endereco, celular, password, designacao })
             })
-            .then(data => {
-                alert(data.message);
-                document.getElementById('add-user-form').reset();
-                const addUserModal = bootstrap.Modal.getInstance(document.getElementById('add-user-modal'));
-                addUserModal.hide();
-                loadUsers();
-                updateTotalUsuarios();
-            })
-            .catch(error => console.error('Erro ao adicionar usuário:', error));
-    });
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro ao adicionar usuário: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert(data.message);
+                    addUserForm.reset();
+                    if (addUserModal) {
+                        addUserModal.hide();
+                    }
+                    loadUsers();
+                    updateTotalUsuarios();
+                })
+                .catch(error => console.error('Erro ao adicionar usuário:', error));
+        });
+    } else {
+        console.error('Formulário de adicionar usuário não encontrado no DOM.');
+    }
 
     // Evento de submissão do formulário de editar usuário
-    document.getElementById('edit-user-form')?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const userId = document.getElementById('edit-user-id').value;
-        const username = document.getElementById('edit-username').value;
-        const email = document.getElementById('edit-email').value;
-        const endereco = document.getElementById('edit-endereco').value;
-        const celular = document.getElementById('edit-celular').value;
-        const designacao = document.getElementById('edit-designacao').value;
+    const editUserForm = document.getElementById('edit-user-form');
+    if (editUserForm) {
+        editUserForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('edit-user-id').value;
+            const username = document.getElementById('edit-username').value;
+            const email = document.getElementById('edit-email').value;
+            const endereco = document.getElementById('edit-endereco').value;
+            const celular = document.getElementById('edit-celular').value;
+            const designacao = document.getElementById('edit-designacao').value;
 
-        console.log(`Editando usuário ID ${userId}`);
+            console.log(`Editando usuário ID ${userId}`);
 
-        fetch(`/api/users/${userId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, endereco, celular, designacao })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro ao editar usuário: ${response.status}`);
-                }
-                return response.json();
+            fetch(`/api/users/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, endereco, celular, designacao })
             })
-            .then(data => {
-                alert(data.message);
-                document.getElementById('edit-user-form').reset();
-                const editUserModal = bootstrap.Modal.getInstance(document.getElementById('edit-user-modal'));
-                editUserModal.hide();
-                loadUsers();
-                updateTotalUsuarios();
-            })
-            .catch(error => console.error('Erro ao editar usuário:', error));
-    });
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro ao editar usuário: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert(data.message);
+                    editUserForm.reset();
+                    const editUserModalElement = document.getElementById('edit-user-modal');
+                    if (editUserModalElement) {
+                        const editUserModal = bootstrap.Modal.getInstance(editUserModalElement);
+                        if (editUserModal) {
+                            editUserModal.hide();
+                        }
+                    }
+                    loadUsers();
+                    updateTotalUsuarios();
+                })
+                .catch(error => console.error('Erro ao editar usuário:', error));
+        });
+    } else {
+        console.error('Formulário de editar usuário não encontrado no DOM.');
+    }
 
     // Inicializar
     function initialize() {
         const activeSection = document.querySelector('.section.active');
-        if (activeSection.id === 'usuarios') {
+        if (activeSection && activeSection.id === 'usuarios') {
             loadUsers();
         }
     }
@@ -488,9 +543,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initialize();
 
     // Seção de Território
-    const territorioTab = document.querySelectorAll('.nav-link[data-bs-toggle="tab"]');
+    const territorioTabs = document.querySelectorAll('.nav-link[data-bs-toggle="tab"]');
 
-    territorioTab.forEach(tab => {
+    territorioTabs.forEach(tab => {
         tab.addEventListener('shown.bs.tab', (event) => {
             const target = event.target.getAttribute('data-bs-target');
             if (target === '#gerenciamento') {
@@ -500,43 +555,66 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Eventos para a seção de Território
-    document.getElementById('draw-territory-btn').addEventListener('click', () => {
-        if (isEditing || isDeleting) {
-            toggleEditingMode(false);
-            toggleDeletingMode(false);
-        }
-        isDrawingTerritory = true;
-        isDrawingLots = false;
-        drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-    });
+    const drawTerritoryBtn = document.getElementById('draw-territory-btn');
+    const drawLotsBtn = document.getElementById('draw-lots-btn');
+    const editModeBtn = document.getElementById('edit-mode-btn');
+    const deleteModeBtn = document.getElementById('delete-mode-btn');
+    const saveTerritorioBtn = document.getElementById('save-territorio-btn');
+    const saveEditsBtn = document.getElementById('save-edits-btn');
 
-    document.getElementById('draw-lots-btn').addEventListener('click', () => {
-        if (!territoryShape) {
-            alert('Por favor, desenhe primeiro o território principal.');
-            return;
-        }
-        if (isEditing || isDeleting) {
-            toggleEditingMode(false);
-            toggleDeletingMode(false);
-        }
-        isDrawingTerritory = false;
-        isDrawingLots = true;
-        drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
-    });
+    if (drawTerritoryBtn) {
+        drawTerritoryBtn.addEventListener('click', () => {
+            if (isEditing || isDeleting) {
+                toggleEditingMode(false);
+                toggleDeletingMode(false);
+            }
+            isDrawingTerritory = true;
+            isDrawingLots = false;
+            drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+        });
+    } else {
+        console.error('Botão de desenhar território não encontrado no DOM.');
+    }
 
-    document.getElementById('edit-mode-btn').addEventListener('click', () => {
-        toggleEditingMode(!isEditing);
-        if (isDeleting) {
-            toggleDeletingMode(false);
-        }
-    });
+    if (drawLotsBtn) {
+        drawLotsBtn.addEventListener('click', () => {
+            if (!territoryShape) {
+                alert('Por favor, desenhe primeiro o território principal.');
+                return;
+            }
+            if (isEditing || isDeleting) {
+                toggleEditingMode(false);
+                toggleDeletingMode(false);
+            }
+            isDrawingTerritory = false;
+            isDrawingLots = true;
+            drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+        });
+    } else {
+        console.error('Botão de desenhar lotes não encontrado no DOM.');
+    }
 
-    document.getElementById('delete-mode-btn').addEventListener('click', () => {
-        toggleDeletingMode(!isDeleting);
-        if (isEditing) {
-            toggleEditingMode(false);
-        }
-    });
+    if (editModeBtn) {
+        editModeBtn.addEventListener('click', () => {
+            toggleEditingMode(!isEditing);
+            if (isDeleting) {
+                toggleDeletingMode(false);
+            }
+        });
+    } else {
+        console.error('Botão de modo de edição não encontrado no DOM.');
+    }
+
+    if (deleteModeBtn) {
+        deleteModeBtn.addEventListener('click', () => {
+            toggleDeletingMode(!isDeleting);
+            if (isEditing) {
+                toggleEditingMode(false);
+            }
+        });
+    } else {
+        console.error('Botão de modo de apagar não encontrado no DOM.');
+    }
 
     function toggleEditingMode(enable) {
         isEditing = enable;
@@ -545,10 +623,14 @@ document.addEventListener('DOMContentLoaded', () => {
             drawingManager.setDrawingMode(null);
             isDrawingTerritory = false;
             isDrawingLots = false;
-            document.getElementById('edit-mode-btn').classList.add('active');
+            if (editModeBtn) {
+                editModeBtn.classList.add('active');
+            }
         } else {
             setEditing(false);
-            document.getElementById('edit-mode-btn').classList.remove('active');
+            if (editModeBtn) {
+                editModeBtn.classList.remove('active');
+            }
         }
     }
 
@@ -560,10 +642,14 @@ document.addEventListener('DOMContentLoaded', () => {
             isDrawingTerritory = false;
             isDrawingLots = false;
             setEditing(false);
-            document.getElementById('delete-mode-btn').classList.add('active');
+            if (deleteModeBtn) {
+                deleteModeBtn.classList.add('active');
+            }
         } else {
             setDeleting(false);
-            document.getElementById('delete-mode-btn').classList.remove('active');
+            if (deleteModeBtn) {
+                deleteModeBtn.classList.remove('active');
+            }
         }
     }
 
@@ -590,122 +676,134 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Salvar Território
-    document.getElementById('save-territorio-btn').addEventListener('click', () => {
-        const identificador = document.getElementById('territorio-id').value.trim();
-        const bairro = document.getElementById('territorio-bairro').value.trim();
-        if (!identificador) {
-            alert('Por favor, insira um identificador para o território.');
-            return;
-        }
-        if (!bairro) {
-            alert('Por favor, insira um bairro para o território.');
-            return;
-        }
+    if (saveTerritorioBtn) {
+        saveTerritorioBtn.addEventListener('click', () => {
+            const identificador = document.getElementById('territorio-id').value.trim();
+            const bairro = document.getElementById('territorio-bairro').value.trim();
+            if (!identificador) {
+                alert('Por favor, insira um identificador para o território.');
+                return;
+            }
+            if (!bairro) {
+                alert('Por favor, insira um bairro para o território.');
+                return;
+            }
 
-        if (!territoryShape) {
-            alert('Por favor, desenhe o território principal.');
-            return;
-        }
+            if (!territoryShape) {
+                alert('Por favor, desenhe o território principal.');
+                return;
+            }
 
-        let territoryCoordinates = [];
-        territoryShape.getPath().forEach(point => {
-            territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
-        });
-
-        let lotsData = lotShapes.map(shape => {
-            let shapeCoordinates = [];
-            shape.getPath().forEach(point => {
-                shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
+            let territoryCoordinates = [];
+            territoryShape.getPath().forEach(point => {
+                territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
             });
-            return shapeCoordinates;
-        });
 
-        console.log('Dados a serem enviados:');
-        console.log('Identificador:', identificador);
-        console.log('Bairro:', bairro);
-        console.log('Territory:', territoryCoordinates);
-        console.log('Lots:', lotsData);
-
-        fetch('/api/territorios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                identificador: identificador,
-                bairro: bairro,
-                territory: territoryCoordinates,
-                lots: lotsData
-            })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro ao salvar território: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert(data.message);
-                if (territoryShape) {
-                    territoryShape.setMap(null);
-                    territoryShape = null;
-                }
-                lotShapes.forEach(shape => shape.setMap(null));
-                lotShapes = [];
-                document.getElementById('territorio-id').value = '';
-                document.getElementById('territorio-bairro').value = '';
-                document.getElementById('draw-territory-btn').disabled = false;
-                document.getElementById('draw-lots-btn').disabled = true;
-            })
-            .catch(error => {
-                console.error('Erro ao salvar território:', error);
-                alert('Erro ao salvar território. Tente novamente.');
+            let lotsData = lotShapes.map(shape => {
+                let shapeCoordinates = [];
+                shape.getPath().forEach(point => {
+                    shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
+                });
+                return shapeCoordinates;
             });
-    });
+
+            console.log('Dados a serem enviados:');
+            console.log('Identificador:', identificador);
+            console.log('Bairro:', bairro);
+            console.log('Territory:', territoryCoordinates);
+            console.log('Lots:', lotsData);
+
+            fetch('/api/territorios', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    identificador: identificador,
+                    bairro: bairro,
+                    territory: territoryCoordinates,
+                    lots: lotsData
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro ao salvar território: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert(data.message);
+                    if (territoryShape) {
+                        territoryShape.setMap(null);
+                        territoryShape = null;
+                    }
+                    lotShapes.forEach(shape => shape.setMap(null));
+                    lotShapes = [];
+                    document.getElementById('territorio-id').value = '';
+                    document.getElementById('territorio-bairro').value = '';
+                    if (drawTerritoryBtn) {
+                        drawTerritoryBtn.disabled = false;
+                    }
+                    if (drawLotsBtn) {
+                        drawLotsBtn.disabled = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao salvar território:', error);
+                    alert('Erro ao salvar território. Tente novamente.');
+                });
+        });
+    } else {
+        console.error('Botão de salvar território não encontrado no DOM.');
+    }
 
     // Salvar Alterações no Território
-    document.getElementById('save-edits-btn').addEventListener('click', () => {
-        if (!territoryShape) {
-            alert('Nenhum território para salvar.');
-            return;
-        }
+    if (saveEditsBtn) {
+        saveEditsBtn.addEventListener('click', () => {
+            if (!territoryShape) {
+                alert('Nenhum território para salvar.');
+                return;
+            }
 
-        let territoryCoordinates = [];
-        territoryShape.getPath().forEach(point => {
-            territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
-        });
-
-        let lotsData = lotShapes.map(shape => {
-            let shapeCoordinates = [];
-            shape.getPath().forEach(point => {
-                shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
+            let territoryCoordinates = [];
+            territoryShape.getPath().forEach(point => {
+                territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
             });
-            return {
-                id: shape.loteId,
-                coordenadas: shapeCoordinates
-            };
-        });
 
-        fetch(`/api/territorios/${territoryShape.territorioId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                territory: territoryCoordinates,
-                lots: lotsData
-            })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro ao salvar alterações: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert(data.message);
-            })
-            .catch(error => {
-                console.error('Erro ao salvar alterações:', error);
-                alert('Erro ao salvar alterações. Tente novamente.');
+            let lotsData = lotShapes.map(shape => {
+                let shapeCoordinates = [];
+                shape.getPath().forEach(point => {
+                    shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
+                });
+                return {
+                    id: shape.loteId,
+                    coordenadas: shapeCoordinates
+                };
             });
-    });
+
+            fetch(`/api/territorios/${territoryShape.territorioId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    territory: territoryCoordinates,
+                    lots: lotsData
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro ao salvar alterações: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert(data.message);
+                })
+                .catch(error => {
+                    console.error('Erro ao salvar alterações:', error);
+                    alert('Erro ao salvar alterações. Tente novamente.');
+                });
+        });
+    } else {
+        console.error('Botão de salvar alterações não encontrado no DOM.');
+    }
 
     // Carregar territórios
     function loadTerritorios() {
@@ -721,23 +819,27 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 const tbody = document.querySelector('#territorios-table tbody');
-                tbody.innerHTML = '';
+                if (tbody) {
+                    tbody.innerHTML = '';
 
-                data.forEach(territorio => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${territorio.id}</td>
-                        <td>${territorio.identificador}</td>
-                        <td>${territorio.status ? 'Concluído' : 'Pendente'}</td>
-                        <td>
-                            <button class="action-btn view-btn" data-id="${territorio.id}"><i class="fas fa-eye"></i> Visualizar</button>
-                            <button class="action-btn delete-btn" data-id="${territorio.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                    data.forEach(territorio => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${territorio.id}</td>
+                            <td>${territorio.identificador}</td>
+                            <td>${territorio.status ? 'Concluído' : 'Pendente'}</td>
+                            <td>
+                                <button class="action-btn view-btn" data-id="${territorio.id}"><i class="fas fa-eye"></i> Visualizar</button>
+                                <button class="action-btn delete-btn" data-id="${territorio.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
 
-                addTerritorioActionEvents();
+                    addTerritorioActionEvents();
+                } else {
+                    console.error('Corpo da tabela de territórios não encontrado no DOM.');
+                }
             })
             .catch(error => console.error('Erro ao carregar territórios:', error));
     }
@@ -855,8 +957,12 @@ document.addEventListener('DOMContentLoaded', () => {
         territorioTabLinks.forEach(link => link.classList.remove('active'));
         const cadastroTab = document.querySelector('#cadastro-tab');
         const cadastroContent = document.querySelector('#cadastro');
-        cadastroTab.classList.add('active');
-        cadastroContent.classList.add('show', 'active');
+        if (cadastroTab && cadastroContent) {
+            cadastroTab.classList.add('active');
+            cadastroContent.classList.add('show', 'active');
+        } else {
+            console.error('Abas de cadastro não encontradas no DOM.');
+        }
     }
 
     // Atualizar status do lote
@@ -902,22 +1008,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Exportação do Território
     const exportContainer = document.querySelector('.export-container');
-    const exportToggleBtn = document.querySelector('.export-toggle-btn');
-    const exportDropdown = document.querySelector('.export-dropdown');
+    const exportToggleBtn = document.querySelector('#exportDropdown'); // Seleção correta pelo ID
+    const exportDropdown = document.querySelector('.dropdown-menu[aria-labelledby="exportDropdown"]'); // Seleção correta pela classe e atributo
 
-    exportToggleBtn.addEventListener('click', () => {
-        exportContainer.classList.toggle('active');
-    });
+    if (exportToggleBtn && exportDropdown) {
+        exportToggleBtn.addEventListener('click', () => {
+            exportContainer.classList.toggle('active');
+        });
 
-    exportDropdown.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (e.target.tagName === 'A') {
-            const format = e.target.getAttribute('data-format');
-            if (!territoryShape || !territoryShape.territorioId) {
-                alert('Nenhum território carregado para exportar.');
-                return;
+        exportDropdown.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (e.target.tagName === 'A') {
+                const format = e.target.getAttribute('data-format');
+                if (!territoryShape || !territoryShape.territorioId) {
+                    alert('Nenhum território carregado para exportar.');
+                    return;
+                }
+                window.open(`/api/territorios/${territoryShape.territorioId}/export?format=${format}`, '_blank');
             }
-            window.open(`/api/territorios/${territoryShape.territorioId}/export?format=${format}`, '_blank');
-        }
-    });
+        });
+    } else {
+        console.error('Elementos de exportação não encontrados no DOM.');
+    }
 });
