@@ -51,20 +51,6 @@
         .export-container.active .export-dropdown {
             display: block;
         }
-
-        /* Estilo para o segundo mapa na aba Gerenciamento */
-        #map-gerenciamento {
-            height: 500px;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        /* Ocultar botões de edição na aba Cadastro */
-        #territorio .tab-content#cadastro .drawing-buttons .edit-mode-btn,
-        #territorio .tab-content#cadastro .drawing-buttons .delete-mode-btn,
-        #territorio .tab-content#cadastro .drawing-buttons #save-edits-btn {
-            display: none;
-        }
     </style>
 </head>
 
@@ -194,10 +180,15 @@
                             <div class="drawing-buttons">
                                 <button id="draw-territory-btn" class="btn">Desenhar Território</button>
                                 <button id="draw-lots-btn" class="btn" disabled>Desenhar Lotes</button>
+                                <button id="edit-mode-btn" class="btn"><i class="fas fa-hand-pointer"></i>
+                                    Editar</button>
+                                <button id="delete-mode-btn" class="btn"><i class="fas fa-trash-alt"></i>
+                                    Apagar</button>
                                 <button id="save-territorio-btn" class="btn">Salvar Território</button>
+                                <button id="save-edits-btn" class="btn">Salvar Alterações</button>
                             </div>
 
-                            <div id="map-cadastro" style="height: 500px; width: 100%; margin-top: 10px;"></div>
+                            <div id="map" style="height: 500px; width: 100%; margin-top: 10px;"></div>
 
                             <div class="export-container">
                                 <button class="btn export-toggle-btn"><i class="fas fa-download"></i> Exportar</button>
@@ -221,26 +212,6 @@
                                 </thead>
                                 <tbody></tbody>
                             </table>
-
-                            <div id="edit-territorio-modal" class="modal">
-                                <div class="modal-content">
-                                    <span class="close-btn">&times;</span>
-                                    <h2>Editar Território</h2>
-                                    <form id="edit-territorio-form">
-                                        <input type="hidden" id="edit-territorio-id">
-                                        <label for="edit-territorio-identificador">Identificador:</label>
-                                        <input type="text" id="edit-territorio-identificador" name="identificador"
-                                            required>
-
-                                        <label for="edit-territorio-bairro">Bairro:</label>
-                                        <input type="text" id="edit-territorio-bairro" name="bairro" required>
-
-                                        <button type="submit" class="btn">Salvar Alterações</button>
-                                    </form>
-                                </div>
-                            </div>
-
-                            <div id="map-gerenciamento"></div>
                         </div>
                     </div>
                 </section>
@@ -296,27 +267,9 @@
         </div>
     </div>
 
-    <div id="edit-territorio-modal-global" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>Editar Território</h2>
-            <form id="edit-territorio-form">
-                <input type="hidden" id="edit-territorio-id">
-                <label for="edit-territorio-identificador">Identificador:</label>
-                <input type="text" id="edit-territorio-identificador" name="identificador" required>
-
-                <label for="edit-territorio-bairro">Bairro:</label>
-                <input type="text" id="edit-territorio-bairro" name="bairro" required>
-
-                <button type="submit" class="btn">Salvar Alterações</button>
-            </form>
-        </div>
-    </div>
-
     <script src="js/dashboard.js"></script>
     <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAwvAt4l0Pkb1c52FLUE-ttVxm4YZ9J8M&libraries=drawing,geometry&callback=initMap"
-        async defer>
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAwvAt4l0Pkb1c52FLUE-ttVxm4YZ9J8M&libraries=drawing,geometry&callback=initMap">
         </script>
 </body>
 
