@@ -2,6 +2,7 @@
 
 // Defina as variáveis no escopo global
 let map;
+let mapGerenciamento;
 let drawingManager;
 let territoryShape = null; // Armazena o polígono do território principal
 let lotShapes = []; // Armazena os polígonos dos lotes
@@ -13,8 +14,16 @@ let selectedShape = null;
 
 // Função initMap no escopo global
 function initMap() {
-    console.log('Inicializando o mapa');
+    console.log('Inicializando os mapas');
+
+    // Inicializar o mapa de Cadastro
     map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: -6.530239, lng: -49.851626 },
+        zoom: 12
+    });
+
+    // Inicializar o mapa de Gerenciamento
+    mapGerenciamento = new google.maps.Map(document.getElementById('map-gerenciamento'), {
         center: { lat: -6.530239, lng: -49.851626 },
         zoom: 12
     });
@@ -63,8 +72,9 @@ function initMap() {
             });
 
             if (!isValidLot) {
-                alert('O lote desenhado está fora do território. Por favor, desenhe o lote dentro do território.');
                 newShape.setMap(null);
+                // Atualizar a cor para indicar erro
+                newShape.setOptions({ fillColor: '#FF0000' });
             } else {
                 lotShapes.push(newShape);
             }
@@ -75,6 +85,8 @@ function initMap() {
                 deleteShape(newShape);
             } else if (isEditing) {
                 selectShape(newShape);
+            } else if (newShape.type === 'lot') {
+                toggleLoteStatus(newShape);
             }
         });
     });
@@ -484,6 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (tab === 'gerenciamento') {
                 loadTerritorios();
+                fitMapGerenciamento();
             }
         });
     });
@@ -512,20 +525,6 @@ document.addEventListener('DOMContentLoaded', () => {
         drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
     });
 
-    document.getElementById('edit-mode-btn').addEventListener('click', () => {
-        toggleEditingMode(!isEditing);
-        if (isDeleting) {
-            toggleDeletingMode(false);
-        }
-    });
-
-    document.getElementById('delete-mode-btn').addEventListener('click', () => {
-        toggleDeletingMode(!isDeleting);
-        if (isEditing) {
-            toggleEditingMode(false);
-        }
-    });
-
     function toggleEditingMode(enable) {
         isEditing = enable;
         if (isEditing) {
@@ -533,10 +532,10 @@ document.addEventListener('DOMContentLoaded', () => {
             drawingManager.setDrawingMode(null);
             isDrawingTerritory = false;
             isDrawingLots = false;
-            document.getElementById('edit-mode-btn').classList.add('active');
+            // Mover botões para Gerenciamento
+            // Opcional: adicionar botão de salvar alterações na Gerenciamento
         } else {
             setEditing(false);
-            document.getElementById('edit-mode-btn').classList.remove('active');
         }
     }
 
@@ -548,10 +547,8 @@ document.addEventListener('DOMContentLoaded', () => {
             isDrawingTerritory = false;
             isDrawingLots = false;
             setEditing(false);
-            document.getElementById('delete-mode-btn').classList.add('active');
         } else {
             setDeleting(false);
-            document.getElementById('delete-mode-btn').classList.remove('active');
         }
     }
 
@@ -564,16 +561,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (enabled) {
             map.setOptions({ draggableCursor: 'pointer' });
+            mapGerenciamento.setOptions({ draggableCursor: 'pointer' });
         } else {
             map.setOptions({ draggableCursor: null });
+            mapGerenciamento.setOptions({ draggableCursor: null });
         }
     }
 
     function setDeleting(enabled) {
         if (enabled) {
             map.setOptions({ draggableCursor: 'not-allowed' });
+            mapGerenciamento.setOptions({ draggableCursor: 'not-allowed' });
         } else {
             map.setOptions({ draggableCursor: null });
+            mapGerenciamento.setOptions({ draggableCursor: null });
         }
     }
 
@@ -641,6 +642,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('territorio-bairro').value = '';
                 document.getElementById('draw-territory-btn').disabled = false;
                 document.getElementById('draw-lots-btn').disabled = true;
+                loadTerritorios();
+                fitMapGerenciamento();
             })
             .catch(error => {
                 console.error('Erro ao salvar território:', error);
@@ -648,48 +651,43 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     });
 
-    document.getElementById('save-edits-btn').addEventListener('click', () => {
-        if (!territoryShape) {
-            alert('Nenhum território para salvar.');
+    document.getElementById('save-territorio-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        // Implementar se necessário
+    });
+
+    document.getElementById('edit-territorio-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const territorioId = document.getElementById('edit-territorio-id').value;
+        const identificador = document.getElementById('edit-territorio-identificador').value.trim();
+        const bairro = document.getElementById('edit-territorio-bairro').value.trim();
+
+        if (!identificador || !bairro) {
+            alert('Por favor, preencha todos os campos.');
             return;
         }
 
-        let territoryCoordinates = [];
-        territoryShape.getPath().forEach(point => {
-            territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
-        });
-
-        let lotsData = lotShapes.map(shape => {
-            let shapeCoordinates = [];
-            shape.getPath().forEach(point => {
-                shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
-            });
-            return {
-                id: shape.loteId,
-                coordenadas: shapeCoordinates
-            };
-        });
-
-        fetch(`/api/territorios/${territoryShape.territorioId}`, {
+        fetch(`/api/territorios/${territorioId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                territory: territoryCoordinates,
-                lots: lotsData
-            })
+            body: JSON.stringify({ identificador, bairro })
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Erro ao salvar alterações: ${response.statusText}`);
+                    throw new Error(`Erro ao editar território: ${response.statusText}`);
                 }
                 return response.json();
             })
             .then(data => {
                 alert(data.message);
+                document.getElementById('edit-territorio-form').reset();
+                document.getElementById('edit-territorio-modal').style.display = 'none';
+                loadTerritorios();
+                fitMapGerenciamento();
             })
             .catch(error => {
-                console.error('Erro ao salvar alterações:', error);
-                alert('Erro ao salvar alterações. Tente novamente.');
+                console.error('Erro ao editar território:', error);
+                alert('Erro ao editar território. Tente novamente.');
             });
     });
 
@@ -716,7 +714,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>${territorio.status ? 'Concluído' : 'Pendente'}</td>
                         <td>
                             <button class="action-btn view-btn" data-id="${territorio.id}"><i class="fas fa-eye"></i> Visualizar</button>
-                            <button class="action-btn delete-btn" data-id="${territorio.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
+                            <button class="action-btn edit-territorio-btn" data-id="${territorio.id}"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="action-btn delete-territorio-btn" data-id="${territorio.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -736,13 +735,46 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        const deleteButtons = document.querySelectorAll('.delete-btn');
+        const deleteButtons = document.querySelectorAll('.delete-territorio-btn');
         deleteButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const territorioId = button.getAttribute('data-id');
                 deleteTerritorio(territorioId);
             });
         });
+
+        const editTerritorioButtons = document.querySelectorAll('.edit-territorio-btn');
+        editTerritorioButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const territorioId = button.getAttribute('data-id');
+                openEditTerritorioModal(territorioId);
+            });
+        });
+    }
+
+    function openEditTerritorioModal(territorioId) {
+        fetch(`/api/territorios/${territorioId}`, {
+            method: 'GET'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro ao buscar território: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const territorio = data.territorio;
+                if (territorio) {
+                    document.getElementById('edit-territorio-id').value = territorio.id;
+                    document.getElementById('edit-territorio-identificador').value = territorio.identificador;
+                    document.getElementById('edit-territorio-bairro').value = territorio.bairro;
+                    document.getElementById('edit-territorio-modal').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar território:', error);
+                alert('Erro ao buscar território. Tente novamente.');
+            });
     }
 
     function viewTerritorio(territorioId) {
@@ -756,7 +788,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(data => {
-                showTerritorioOnMap(data);
+                showTerritorioOnMap(data, mapGerenciamento);
+                fitMapGerenciamento();
             })
             .catch(error => {
                 console.error('Erro ao visualizar território:', error);
@@ -764,40 +797,39 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    function showTerritorioOnMap(data) {
+    function showTerritorioOnMap(data, targetMap) {
         const territorio = data.territorio;
         const lotes = data.lotes;
 
-        if (territoryShape) {
-            territoryShape.setMap(null);
-            territoryShape = null;
-        }
-        lotShapes.forEach(shape => shape.setMap(null));
-        lotShapes = [];
+        // Limpar mapas anteriores
+        const mapToClear = targetMap === mapGerenciamento ? mapGerenciamento : map;
+        clearMap(mapToClear);
 
-        const territoryColor = territorio.status ? '#32CD32' : 'rgba(255, 0, 0, 0.3)';
+        // Desenhar território
+        const territoryColor = territorio.status ? '#32CD32' : '#FF0000';
         const territoryCoords = territorio.territory;
-        territoryShape = new google.maps.Polygon({
-            paths: territoryCoords,
+        const newTerritoryShape = new google.maps.Polygon({
+            paths: territorio.territory,
             fillColor: territoryColor,
             fillOpacity: 0.5,
             strokeWeight: 2,
             editable: isEditing,
-            map: map
+            map: targetMap
         });
 
-        territoryShape.territorioId = territorio.id;
-        territoryShape.type = 'territory';
-        setupPolygonDeleteListener(territoryShape);
+        newTerritoryShape.territorioId = territorio.id;
+        newTerritoryShape.type = 'territory';
+        setupPolygonDeleteListener(newTerritoryShape);
 
-        territoryShape.addListener('click', () => {
+        newTerritoryShape.addListener('click', () => {
             if (isDeleting) {
-                deleteShape(territoryShape);
+                deleteShape(newTerritoryShape);
             } else if (isEditing) {
-                selectShape(territoryShape);
+                selectShape(newTerritoryShape);
             }
         });
 
+        // Desenhar lotes
         lotes.forEach(lote => {
             const lotColor = lote.status ? '#32CD32' : '#FF0000';
             const lotShape = new google.maps.Polygon({
@@ -806,7 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 fillOpacity: 0.5,
                 strokeWeight: 2,
                 editable: isEditing,
-                map: map
+                map: targetMap
             });
 
             lotShape.loteId = lote.id;
@@ -819,27 +851,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (isEditing) {
                     selectShape(lotShape);
                 } else {
-                    updateLoteStatus(lote.id, !lote.status);
+                    toggleLoteStatus(lotShape);
                 }
             });
 
             lotShapes.push(lotShape);
         });
 
-        const bounds = new google.maps.LatLngBounds();
-        territoryCoords.forEach(coord => {
-            bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
-        });
-        map.fitBounds(bounds);
-
-        tabLinks.forEach(link => link.classList.remove('active'));
-        tabContents.forEach(content => content.classList.remove('active'));
-        document.querySelector('.tab-link[data-tab="cadastro"]').classList.add('active');
-        document.getElementById('cadastro').classList.add('active');
+        // Ajustar zoom para o mapa de gerenciamento
+        if (targetMap === mapGerenciamento) {
+            const bounds = new google.maps.LatLngBounds();
+            territoryCoords.forEach(coord => {
+                bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+            });
+            targetMap.fitBounds(bounds);
+        }
     }
 
-    function updateLoteStatus(loteId, newStatus) {
-        fetch(`/api/lotes/${loteId}/status`, {
+    function clearMap(targetMap) {
+        if (territoryShape) {
+            territoryShape.setMap(null);
+            territoryShape = null;
+        }
+        lotShapes.forEach(shape => {
+            shape.setMap(null);
+        });
+        lotShapes = [];
+    }
+
+    function toggleLoteStatus(loteShape) {
+        const newStatus = !isLoteAtivo(loteShape);
+        fetch(`/api/lotes/${loteShape.loteId}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: newStatus })
@@ -851,13 +893,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(data => {
-                alert(data.message);
-                viewTerritorio(territoryShape.territorioId);
+                // Atualizar a cor do lote sem usar alert
+                loteShape.setOptions({
+                    fillColor: newStatus ? '#32CD32' : '#FF0000'
+                });
             })
             .catch(error => {
                 console.error('Erro ao atualizar status do lote:', error);
                 alert('Erro ao atualizar status do lote. Tente novamente.');
             });
+    }
+
+    function isLoteAtivo(loteShape) {
+        return loteShape.getOptions().fillColor === '#32CD32';
     }
 
     function deleteTerritorio(territorioId) {
@@ -872,6 +920,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(data => {
                     alert(data.message);
                     loadTerritorios();
+                    fitMapGerenciamento();
                 })
                 .catch(error => console.error('Erro ao excluir território:', error));
         }
@@ -897,4 +946,14 @@ document.addEventListener('DOMContentLoaded', () => {
             window.open(`/api/territorios/${territoryShape.territorioId}/export?format=${format}`, '_blank');
         }
     });
+
+    function fitMapGerenciamento() {
+        const bounds = new google.maps.LatLngBounds();
+        if (territoryShape) {
+            territoryShape.getPath().forEach(function (latlng) {
+                bounds.extend(latlng);
+            });
+            mapGerenciamento.fitBounds(bounds);
+        }
+    }
 });
