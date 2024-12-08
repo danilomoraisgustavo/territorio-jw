@@ -835,7 +835,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Definir um nível de zoom mínimo após ajustar os limites
         const currentZoom = map.getZoom();
-        const minZoom = 14; // Defina o nível de zoom desejado
+        const minZoom = 18; // Defina o nível de zoom desejado
         if (currentZoom < minZoom) {
             map.setZoom(minZoom);
         }
