@@ -8,9 +8,9 @@
     <title>Dashboard</title>
     <!-- Link para o arquivo CSS personalizado -->
     <link rel="stylesheet" href="css/dashboard.css">
-    <!-- Link para o Bootstrap CSS -->
+    <!-- Link para o Bootstrap CSS com o hash de integridade correto -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-ENjdO4Dr2bkBIFxQpeoYGz2eJT0WycN0QjF1rrgk6eNm3mgFYB5k9g1JQ8N1w4X+" crossorigin="anonymous">
+        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
     <!-- Link para os ícones do Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         referrerpolicy="no-referrer" />
@@ -337,13 +337,14 @@
 
     <!-- Scripts do Bootstrap e dependências -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-qQ0E8ZC7oE12kivYFBpEgoF8S3UthJb6bplsu4tIt3mM7grfCTkHcIuGhsjV0NBL" crossorigin="anonymous">
+        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous">
         </script>
     <!-- Script personalizado -->
     <script src="js/dashboard.js"></script>
-    <!-- Google Maps API -->
+    <!-- Google Maps API com async e defer para melhorar o desempenho -->
     <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAwvAt4l0Pkb1c52FLUE-ttVxm4YZ9J8M&libraries=drawing,geometry&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAwvAt4l0Pkb1c52FLUE-ttVxm4YZ9J8M&libraries=drawing,geometry&callback=initMap"
+        async defer>
         </script>
 </body>
 
