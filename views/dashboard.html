@@ -11,11 +11,51 @@
     <!-- Link para os ícones do Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         referrerpolicy="no-referrer" />
+    <style>
+        .export-container {
+            position: relative;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .export-toggle-btn {
+            background-color: #1E90FF;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .export-dropdown {
+            display: none;
+            position: absolute;
+            background-color: #ffffff;
+            min-width: 160px;
+            border: 1px solid #ccc;
+            z-index: 999;
+        }
+
+        .export-dropdown a {
+            color: #333;
+            padding: 8px 12px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .export-dropdown a:hover {
+            background-color: #ddd;
+        }
+
+        .export-container.active .export-dropdown {
+            display: block;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container dashboard-container">
-        <!-- Cabeçalho -->
         <header class="header">
             <div class="logo">
                 <h1>Meu Dashboard</h1>
@@ -24,13 +64,11 @@
                 <span id="username">Usuário</span>
                 <button id="logout-btn">Sair</button>
             </div>
-            <!-- Botão de toggle da sidebar -->
             <div class="toggle-btn">
                 <i class="fas fa-bars"></i>
             </div>
         </header>
 
-        <!-- Barra lateral -->
         <aside class="sidebar">
             <nav>
                 <ul>
@@ -49,11 +87,8 @@
             </nav>
         </aside>
 
-        <!-- Conteúdo principal -->
         <main class="main-content">
-            <!-- Seções de conteúdo -->
             <div class="section-container">
-                <!-- Início -->
                 <section id="inicio" class="section active">
                     <div class="card-container">
                         <div class="card">
@@ -74,15 +109,11 @@
                     </div>
                 </section>
 
-                <!-- Usuários -->
                 <section id="usuarios" class="section">
                     <h2>Usuários</h2>
                     <p>Gerencie os usuários aqui.</p>
-
-                    <!-- Botão para adicionar novo usuário -->
                     <button id="add-user-btn" class="btn">Adicionar Usuário</button>
 
-                    <!-- Tabela de usuários -->
                     <table id="users-table">
                         <thead>
                             <tr>
@@ -96,12 +127,9 @@
                                 <th>Ações</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <!-- Linhas serão inseridas via JavaScript -->
-                        </tbody>
+                        <tbody></tbody>
                     </table>
 
-                    <!-- Modal para editar usuário -->
                     <div id="edit-user-modal" class="modal">
                         <div class="modal-content">
                             <span class="close-btn">&times;</span>
@@ -134,43 +162,43 @@
                     </div>
                 </section>
 
-                <!-- Território -->
                 <section id="territorio" class="section">
                     <h2>Território</h2>
-
-                    <!-- Container de abas -->
                     <div class="tab-container">
-                        <!-- Lista de abas -->
                         <ul class="tabs">
                             <li class="tab-link active" data-tab="cadastro">Cadastro</li>
                             <li class="tab-link" data-tab="gerenciamento">Gerenciamento</li>
                         </ul>
 
-                        <!-- Conteúdo da aba "Cadastro" -->
                         <div id="cadastro" class="tab-content active">
                             <label for="territorio-id">Identificador do Território:</label>
                             <input type="text" id="territorio-id" name="territorio-id" required>
 
-                            <!-- Botões para controlar o desenho -->
+                            <label for="territorio-bairro">Bairro:</label>
+                            <input type="text" id="territorio-bairro" name="territorio-bairro" required>
+
                             <div class="drawing-buttons">
                                 <button id="draw-territory-btn" class="btn">Desenhar Território</button>
                                 <button id="draw-lots-btn" class="btn" disabled>Desenhar Lotes</button>
-                                <!-- Botão de Edição Adicionado -->
                                 <button id="edit-mode-btn" class="btn"><i class="fas fa-hand-pointer"></i>
                                     Editar</button>
-                                <!-- Botão de Apagar Adicionado -->
                                 <button id="delete-mode-btn" class="btn"><i class="fas fa-trash-alt"></i>
                                     Apagar</button>
                                 <button id="save-territorio-btn" class="btn">Salvar Território</button>
-                                <!-- Botão "Salvar Alterações" -->
                                 <button id="save-edits-btn" class="btn">Salvar Alterações</button>
                             </div>
 
-                            <!-- Mapa -->
                             <div id="map" style="height: 500px; width: 100%; margin-top: 10px;"></div>
+
+                            <div class="export-container">
+                                <button class="btn export-toggle-btn"><i class="fas fa-download"></i> Exportar</button>
+                                <div class="export-dropdown">
+                                    <a href="#" data-format="pdf">Exportar PDF</a>
+                                    <a href="#" data-format="png">Exportar PNG</a>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Conteúdo da aba "Gerenciamento" -->
                         <div id="gerenciamento" class="tab-content">
                             <h3>Lista de Territórios</h3>
                             <table id="territorios-table">
@@ -182,37 +210,30 @@
                                         <th>Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Linhas serão inseridas via JavaScript -->
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
                 </section>
 
-                <!-- Outras seções (Designações, Relatórios, Configurações) -->
                 <section id="designacoes" class="section">
                     <h2>Designações</h2>
                     <p>Gerencie as designações aqui.</p>
-                    <!-- Adicione formulários ou listas de designações aqui -->
                 </section>
 
                 <section id="relatorios" class="section">
                     <h2>Relatórios</h2>
                     <p>Acesse os relatórios aqui.</p>
-                    <!-- Adicione gráficos ou documentos de relatórios aqui -->
                 </section>
 
                 <section id="configuracoes" class="section">
                     <h2>Configurações</h2>
                     <p>Ajuste as configurações do sistema.</p>
-                    <!-- Adicione formulários ou opções de configuração aqui -->
                 </section>
             </div>
         </main>
     </div>
 
-    <!-- Modal para adicionar usuário -->
     <div id="add-user-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
@@ -246,9 +267,7 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="js/dashboard.js"></script>
-    <!-- API do Google Maps -->
     <script
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAwvAt4l0Pkb1c52FLUE-ttVxm4YZ9J8M&libraries=drawing,geometry&callback=initMap">
         </script>

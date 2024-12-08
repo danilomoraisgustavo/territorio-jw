@@ -2,9 +2,11 @@
 
 const express = require('express');
 const path = require('path');
+const puppeteer = require('puppeteer');
 const bcrypt = require('bcryptjs');
 const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
+const fs = require('fs');
 
 const app = express();
 
@@ -17,11 +19,9 @@ const db = new sqlite3.Database('./territorio.db', (err) => {
     }
 });
 
-// Promisify para usar async/await
 const dbGet = require('util').promisify(db.get).bind(db);
 const dbAll = require('util').promisify(db.all).bind(db);
 
-// Função personalizada para dbRun
 function dbRun(sql, params = []) {
     return new Promise((resolve, reject) => {
         db.run(sql, params, function (err) {
@@ -37,7 +37,16 @@ function dbRun(sql, params = []) {
     });
 }
 
-// Criar a tabela 'users' se não existir
+// Verifica se a coluna bairro existe
+(async () => {
+    const resAll = await dbAll("PRAGMA table_info(territorios)");
+    const hasBairro = resAll.some(col => col.name === 'bairro');
+    if (!hasBairro) {
+        await dbRun("ALTER TABLE territorios ADD COLUMN bairro TEXT");
+    }
+})();
+
+// Criar tabelas
 db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
@@ -49,16 +58,15 @@ db.run(`CREATE TABLE IF NOT EXISTS users (
     init BOOLEAN NOT NULL
 )`);
 
-// Criar a tabela 'territorios'
 db.run(`CREATE TABLE IF NOT EXISTS territorios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     identificador TEXT NOT NULL UNIQUE,
     territory TEXT NOT NULL,
+    bairro TEXT,
     status BOOLEAN DEFAULT FALSE,
     data_conclusao DATE
 )`);
 
-// Criar a tabela 'lotes'
 db.run(`CREATE TABLE IF NOT EXISTS lotes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     territorio_id INTEGER NOT NULL,
@@ -68,19 +76,17 @@ db.run(`CREATE TABLE IF NOT EXISTS lotes (
     FOREIGN KEY (territorio_id) REFERENCES territorios(id)
 )`);
 
-// Configuração do middleware de sessão
+// Sessão
 app.use(session({
-    secret: 'seuSegredoAqui', // Substitua por uma chave secreta forte
+    secret: 'seuSegredoAqui',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // Deve ser false se você não estiver usando HTTPS
+    cookie: { secure: false }
 }));
 
-// Middlewares para analisar o corpo da requisição
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json()); // Para receber JSON no body da requisição
+app.use(express.json());
 
-// Middleware para verificar se o usuário está logado
 function isAuthenticated(req, res, next) {
     if (req.session.isLoggedIn) {
         next();
@@ -89,18 +95,15 @@ function isAuthenticated(req, res, next) {
     }
 }
 
-// Middleware para verificar a designação do usuário
 function authorizeRoles(allowedRoles) {
     return async (req, res, next) => {
         if (!req.session.isLoggedIn) {
-
             return res.status(401).json({ message: 'Usuário não autenticado' });
         }
 
         try {
             const userId = req.session.userId;
             const user = await dbGet('SELECT designacao FROM users WHERE id = ?', [userId]);
-
             if (user && allowedRoles.includes(user.designacao)) {
                 next();
             } else {
@@ -113,67 +116,58 @@ function authorizeRoles(allowedRoles) {
     };
 }
 
-// Rotas de autenticação e páginas principais
-
-// Rota principal
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'views/index.html'));
 });
 
-// Rota para o dashboard
 app.get('/dashboard', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views/dashboard.html'));
 });
 
-// Rota de login
+// Login
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        // Verifica se o usuário existe via email
         const user = await dbGet('SELECT * FROM users WHERE email = ?', [email]);
 
         if (!user) {
             return res.status(400).json({ message: 'Email não encontrado' });
         }
 
-        // Verifica se o usuário está autorizado a acessar o sistema (init == true)
         if (!user.init) {
             return res.status(403).json({ message: 'Usuário ainda não autorizado pelo administrador' });
         }
 
-        // Compara a senha
         const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
             return res.status(400).json({ message: 'Senha incorreta' });
         }
 
-        // Armazena a sessão e redireciona para o dashboard
         req.session.isLoggedIn = true;
         req.session.userId = user.id;
 
         res.json({ message: 'Login bem-sucedido', redirect: '/dashboard' });
-
     } catch (error) {
         console.error('Erro no processo de login:', error);
         return res.status(500).json({ message: 'Erro no servidor' });
     }
 });
 
-// Rota para logout
+// Logout
 app.post('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             console.error('Erro ao destruir a sessão:', err);
             return res.status(500).json({ message: 'Erro ao fazer logout' });
         }
-        res.clearCookie('connect.sid');  // Limpar o cookie da sessão
+        res.clearCookie('connect.sid');
         res.json({ message: 'Logout bem-sucedido' });
     });
 });
 
-// Rota para obter informações do usuário
+// user-info
 app.get('/user-info', isAuthenticated, async (req, res) => {
     try {
         const userId = req.session.userId;
@@ -190,7 +184,7 @@ app.get('/user-info', isAuthenticated, async (req, res) => {
     }
 });
 
-// Rota para registrar o usuário
+// register
 app.post('/register', async (req, res) => {
     const { username, email, endereco, celular, password } = req.body;
 
@@ -198,7 +192,6 @@ app.post('/register', async (req, res) => {
         const existingUser = await dbGet('SELECT * FROM users WHERE email = ?', [email]);
 
         if (existingUser) {
-
             return res.status(400).json({ message: 'E-mail já cadastrado' });
         }
 
@@ -216,9 +209,7 @@ app.post('/register', async (req, res) => {
     }
 });
 
-/* =========================== Rotas de API para Usuários =========================== */
-
-// Obter a contagem de usuários
+// Rotas de API para Usuários
 app.get('/api/users/count', authorizeRoles(['Administrador', 'Superintendente de Serviço', 'Superintendente de Território']), async (req, res) => {
     try {
         const result = await dbGet('SELECT COUNT(*) as count FROM users');
@@ -229,7 +220,6 @@ app.get('/api/users/count', authorizeRoles(['Administrador', 'Superintendente de
     }
 });
 
-// Obter a lista de usuários
 app.get('/api/users', authorizeRoles(['Administrador', 'Superintendente de Serviço', 'Superintendente de Território']), async (req, res) => {
     try {
         const users = await dbAll('SELECT id, username, email, endereco, celular, designacao, init FROM users');
@@ -240,7 +230,6 @@ app.get('/api/users', authorizeRoles(['Administrador', 'Superintendente de Servi
     }
 });
 
-// Obter detalhes de um usuário específico
 app.get('/api/users/:id', authorizeRoles(['Administrador', 'Superintendente de Serviço', 'Superintendente de Território']), async (req, res) => {
     const userId = req.params.id;
     try {
@@ -256,7 +245,6 @@ app.get('/api/users/:id', authorizeRoles(['Administrador', 'Superintendente de S
     }
 });
 
-// Adicionar um novo usuário
 app.post('/api/users', authorizeRoles(['Administrador', 'Superintendente de Serviço', 'Superintendente de Território']), async (req, res) => {
     const { username, email, endereco, celular, password, designacao } = req.body;
 
@@ -271,7 +259,7 @@ app.post('/api/users', authorizeRoles(['Administrador', 'Superintendente de Serv
 
         await dbRun(
             'INSERT INTO users (username, email, endereco, celular, password, designacao, init) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [username, email, endereco, celular, hashedPassword, designacao, true] // Usuários adicionados diretamente como ativos
+            [username, email, endereco, celular, hashedPassword, designacao, true]
         );
 
         res.status(201).json({ message: 'Usuário adicionado com sucesso!' });
@@ -281,7 +269,6 @@ app.post('/api/users', authorizeRoles(['Administrador', 'Superintendente de Serv
     }
 });
 
-// Atualizar detalhes de um usuário
 app.put('/api/users/:id', authorizeRoles(['Administrador', 'Superintendente de Serviço', 'Superintendente de Território']), async (req, res) => {
     const userId = req.params.id;
     const { username, email, endereco, celular, designacao } = req.body;
@@ -293,7 +280,6 @@ app.put('/api/users/:id', authorizeRoles(['Administrador', 'Superintendente de S
             return res.status(404).json({ message: 'Usuário não encontrado' });
         }
 
-        // Verificar se o email está sendo alterado para um já existente
         if (email !== user.email) {
             const emailExists = await dbGet('SELECT * FROM users WHERE email = ?', [email]);
             if (emailExists) {
@@ -313,7 +299,6 @@ app.put('/api/users/:id', authorizeRoles(['Administrador', 'Superintendente de S
     }
 });
 
-// Excluir um usuário
 app.delete('/api/users/:id', authorizeRoles(['Administrador', 'Superintendente de Serviço', 'Superintendente de Território']), async (req, res) => {
     const userId = req.params.id;
 
@@ -325,8 +310,6 @@ app.delete('/api/users/:id', authorizeRoles(['Administrador', 'Superintendente d
         }
 
         await dbRun('DELETE FROM users WHERE id = ?', [userId]);
-
-
         res.json({ message: 'Usuário excluído com sucesso!' });
     } catch (error) {
         console.error('Erro ao excluir usuário:', error);
@@ -334,20 +317,16 @@ app.delete('/api/users/:id', authorizeRoles(['Administrador', 'Superintendente d
     }
 });
 
-// Aceitar acesso do usuário (init = true)
 app.post('/api/users/:id/accept', authorizeRoles(['Administrador', 'Superintendente de Serviço', 'Superintendente de Território']), async (req, res) => {
     const userId = req.params.id;
 
     try {
         const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId]);
-
         if (!user) {
             return res.status(404).json({ message: 'Usuário não encontrado' });
         }
 
         await dbRun('UPDATE users SET init = ? WHERE id = ?', [true, userId]);
-
-
         res.json({ message: 'Acesso do usuário aceito com sucesso!' });
     } catch (error) {
         console.error('Erro ao aceitar acesso do usuário:', error);
@@ -355,19 +334,16 @@ app.post('/api/users/:id/accept', authorizeRoles(['Administrador', 'Superintende
     }
 });
 
-// Restringir acesso do usuário (init = false)
 app.post('/api/users/:id/restrict', authorizeRoles(['Administrador', 'Superintendente de Serviço', 'Superintendente de Território']), async (req, res) => {
     const userId = req.params.id;
 
     try {
         const user = await dbGet('SELECT * FROM users WHERE id = ?', [userId]);
-
         if (!user) {
             return res.status(404).json({ message: 'Usuário não encontrado' });
         }
 
         await dbRun('UPDATE users SET init = ? WHERE id = ?', [false, userId]);
-
         res.json({ message: 'Acesso do usuário restringido com sucesso!' });
     } catch (error) {
         console.error('Erro ao restringir acesso do usuário:', error);
@@ -375,42 +351,31 @@ app.post('/api/users/:id/restrict', authorizeRoles(['Administrador', 'Superinten
     }
 });
 
-/* =========================== Rotas de API para Territórios e Lotes =========================== */
-
-// Middleware para verificar se o usuário tem permissão para gerenciar territórios
 function authorizeTerritorioAccess(req, res, next) {
-    // Permitir acesso a 'Administrador' e 'Superintendente de Território'
     authorizeRoles(['Administrador', 'Superintendente de Território'])(req, res, next);
 }
 
-// Rota para adicionar um novo território
 app.post('/api/territorios', authorizeTerritorioAccess, async (req, res) => {
-    const { identificador, territory, lots } = req.body;
+    const { identificador, bairro, territory, lots } = req.body;
 
-    if (!identificador || !territory) {
-        return res.status(400).json({ message: 'Identificador e território são obrigatórios' });
+    if (!identificador || !territory || !bairro) {
+        return res.status(400).json({ message: 'Identificador, bairro e território são obrigatórios' });
     }
 
     try {
-        // Verificar se o identificador já existe
         const existingTerritorio = await dbGet('SELECT * FROM territorios WHERE identificador = ?', [identificador]);
 
         if (existingTerritorio) {
             return res.status(400).json({ message: 'Identificador já cadastrado' });
         }
 
-        // Armazenar os dados do território como JSON string
         const territoryString = JSON.stringify(territory);
-
-        // Inserir o território e obter o lastID
         const result = await dbRun(
-            'INSERT INTO territorios (identificador, territory, status) VALUES (?, ?, ?)',
-            [identificador, territoryString, false]
+            'INSERT INTO territorios (identificador, territory, bairro, status) VALUES (?, ?, ?, ?)',
+            [identificador, territoryString, bairro, false]
         );
 
-        const territorioId = result.lastID; // Obter o ID do território inserido
-
-        // Inserir os lotes usando dbRun
+        const territorioId = result.lastID;
         for (let lot of lots) {
             const lotString = JSON.stringify(lot);
             await dbRun('INSERT INTO lotes (territorio_id, coordenadas, status) VALUES (?, ?, ?)', [territorioId, lotString, false]);
@@ -423,7 +388,6 @@ app.post('/api/territorios', authorizeTerritorioAccess, async (req, res) => {
     }
 });
 
-// Rota para obter todos os territórios
 app.get('/api/territorios', authorizeTerritorioAccess, async (req, res) => {
     try {
         const territorios = await dbAll('SELECT id, identificador, status FROM territorios');
@@ -434,23 +398,16 @@ app.get('/api/territorios', authorizeTerritorioAccess, async (req, res) => {
     }
 });
 
-// Rota para obter detalhes de um território específico
 app.get('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) => {
     const territorioId = req.params.id;
     try {
         const territorio = await dbGet('SELECT * FROM territorios WHERE id = ?', [territorioId]);
         if (territorio) {
-            // Converter as formas de volta para objeto JSON
             territorio.territory = JSON.parse(territorio.territory);
-
-            // Obter os lotes associados
             const lotes = await dbAll('SELECT * FROM lotes WHERE territorio_id = ?', [territorioId]);
-
-            // Converter as coordenadas dos lotes de volta para objeto JSON
             lotes.forEach(lote => {
                 lote.coordenadas = JSON.parse(lote.coordenadas);
             });
-
             res.json({ territorio, lotes });
         } else {
             res.status(404).json({ message: 'Território não encontrado' });
@@ -461,7 +418,6 @@ app.get('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) => {
     }
 });
 
-// Rota para excluir um território e seus lotes
 app.delete('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) => {
     const territorioId = req.params.id;
 
@@ -472,10 +428,7 @@ app.delete('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) =
             return res.status(404).json({ message: 'Território não encontrado' });
         }
 
-        // Excluir lotes associados
         await dbRun('DELETE FROM lotes WHERE territorio_id = ?', [territorioId]);
-
-        // Excluir território
         await dbRun('DELETE FROM territorios WHERE id = ?', [territorioId]);
 
         res.json({ message: 'Território e lotes excluídos com sucesso!' });
@@ -485,35 +438,23 @@ app.delete('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) =
     }
 });
 
-// Rota para atualizar o status de um lote
 app.put('/api/lotes/:id/status', isAuthenticated, async (req, res) => {
     const loteId = req.params.id;
     const { status } = req.body;
 
     try {
-        // Atualizar o status e a data de conclusão do lote
         const dataConclusao = status ? new Date().toISOString().split('T')[0] : null;
-        await dbRun(
-            'UPDATE lotes SET status = ?, data_conclusao = ? WHERE id = ?',
-            [status, dataConclusao, loteId]
-        );
+        await dbRun('UPDATE lotes SET status = ?, data_conclusao = ? WHERE id = ?', [status, dataConclusao, loteId]);
 
-        // Verificar se todos os lotes do território estão concluídos
         const lote = await dbGet('SELECT territorio_id FROM lotes WHERE id = ?', [loteId]);
         const lotes = await dbAll('SELECT status FROM lotes WHERE territorio_id = ?', [lote.territorio_id]);
 
         const allDone = lotes.every(l => l.status);
         if (allDone) {
             const territorioConclusao = new Date().toISOString().split('T')[0];
-            await dbRun(
-                'UPDATE territorios SET status = ?, data_conclusao = ? WHERE id = ?',
-                [true, territorioConclusao, lote.territorio_id]
-            );
+            await dbRun('UPDATE territorios SET status = ?, data_conclusao = ? WHERE id = ?', [true, territorioConclusao, lote.territorio_id]);
         } else {
-            await dbRun(
-                'UPDATE territorios SET status = ?, data_conclusao = NULL WHERE id = ?',
-                [false, lote.territorio_id]
-            );
+            await dbRun('UPDATE territorios SET status = ?, data_conclusao = NULL WHERE id = ?', [false, lote.territorio_id]);
         }
 
         res.json({ message: 'Status do lote atualizado com sucesso.' });
@@ -523,17 +464,14 @@ app.put('/api/lotes/:id/status', isAuthenticated, async (req, res) => {
     }
 });
 
-// Rota para atualizar um território existente
 app.put('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) => {
     const territorioId = req.params.id;
     const { territory, lots } = req.body;
 
     try {
-        // Atualizar o território
         const territoryString = JSON.stringify(territory);
         await dbRun('UPDATE territorios SET territory = ? WHERE id = ?', [territoryString, territorioId]);
 
-        // Atualizar cada lote
         for (let lot of lots) {
             const lotString = JSON.stringify(lot.coordenadas);
             await dbRun('UPDATE lotes SET coordenadas = ? WHERE id = ?', [lotString, lot.id]);
@@ -546,15 +484,245 @@ app.put('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) => {
     }
 });
 
-// Middleware para servir arquivos estáticos
+// Função para gerar HTML dinâmico com ajustes finais de margens e alinhamento
+function generateTerritorioHTML(territorio, lotes) {
+    const territorioColor = territorio.status ? '#32CD32' : '#FF0000';
+    let lotesJs = '';
+    for (const lote of lotes) {
+        const loteColor = lote.status ? '#32CD32' : '#FF0000';
+        const coordsArray = JSON.stringify(lote.coordenadas);
+        lotesJs += `
+            (function() {
+                var loteCoords = ${coordsArray};
+                L.polygon(loteCoords, {
+                    color: '${loteColor}',
+                    fillColor: '${loteColor}',
+                    fillOpacity: 0.5
+                }).addTo(map);
+            })();
+        `;
+    }
+
+    const territorioCoords = JSON.stringify(territorio.territory);
+    const modeloPath = path.join(__dirname, 'public', 'modelo.png');
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Cartão de Mapa de Território</title>
+<style>
+  @page {
+    margin: 25mm; /* Margens iguais em todas as direções */
+  }
+  body {
+    margin: 0; /* Remove as margens padrão do body */
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Courier New, monospace;
+    background: url('file:${modeloPath}') no-repeat center top;
+    background-size: cover;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .content {
+    width: 100%;
+    padding: 25mm; /* Margens internas iguais */
+    box-sizing: border-box;
+    text-align: justify;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 26pt;
+    margin-bottom: 20mm;
+    font-family: Courier New, bold, monospace;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10mm;
+    font-size: 20pt;
+    font-family: Courier New, monospace;
+  }
+
+  .header .bairro,
+  .header .identificador {
+    font-size: 18pt;
+    font-weight: 850;
+    font-family: Courier New, monospace;
+  }
+
+  #map {
+    width: 100%;
+    height: 100mm;
+    background: #eee;
+    border: 1px solid #ccc;
+    margin-bottom: 20mm;
+  }
+
+  .instructions {
+    margin-bottom: 15mm;
+    text-align: justify;
+    font-size: 18pt;
+    font-weight: 850;
+    font-family: Courier New, monospace;
+  }
+
+  .footer {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-size: 16pt;
+  }
+
+  .footer h5 {
+    margin: 0;
+    font-family: Courier New, monospace;
+    font-weight: normal;
+  }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+</head>
+<body>
+  <div class="content">
+    <h1>Cartão de Mapa de Território</h1>
+    <div class="header">
+      <div class="bairro">Localidade (Bairro): ${territorio.bairro}</div>
+      <div class="identificador">Terr. Nº: ${territorio.identificador}</div>
+    </div>
+    <div id="map"></div>
+    <div class="instructions">
+      Guarde este cartão no envelope. Tome cuidado para não o manchar, marcar ou dobrar.
+      Cada vez que o território for coberto, queira informar disso o irmão que cuida do arquivo de territórios.
+    </div>
+    <div class="footer">
+      <h5>S-12T 6/72</h5>
+      <h5>Impresso no Brasil</h5>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+    var territoryCoords = ${territorioCoords};
+    var latSum = 0, lngSum = 0, count = 0;
+    territoryCoords.forEach(pt => { latSum += pt.lat; lngSum += pt.lng; count++; });
+    var center = [latSum / count, lngSum / count];
+
+    var map = L.map('map', { zoomControl: false }).setView(center, 15);
+
+    L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    maxZoom: 25,
+    id: 'mapbox/satellite-v9',
+    tileSize: 512,
+    zoomOffset: -1,
+    accessToken: 'pk.eyJ1IjoiZGFuaWxvbW9yYWlzIiwiYSI6ImNsdzZocmJ5eDFqenoyanFzenBoMTc4c28ifQ._RiYYX1oIBe7_MBpTyYWxQ'
+    }).addTo(map);
+
+
+    L.polygon(territoryCoords, {
+      color: '${territorioColor}',
+      fillColor: '${territorioColor}',
+      fillOpacity: 0.3
+    }).addTo(map);
+
+    ${lotesJs}
+
+    var territorioPolygon = L.polygon(territoryCoords);
+    map.fitBounds(territorioPolygon.getBounds());
+
+    window.mapReady = true;
+  </script>
+</body>
+</html>`;
+}
+
+// Rota de exportação corrigida
+app.get('/api/territorios/:id/export', authorizeTerritorioAccess, async (req, res) => {
+    const territorioId = req.params.id;
+    const format = req.query.format || 'pdf';
+
+    try {
+        const territorio = await dbGet('SELECT * FROM territorios WHERE id = ?', [territorioId]);
+        if (!territorio) {
+            return res.status(404).json({ message: 'Território não encontrado' });
+        }
+
+        territorio.territory = JSON.parse(territorio.territory);
+        const lotes = await dbAll('SELECT * FROM lotes WHERE territorio_id = ?', [territorioId]);
+        lotes.forEach(lote => {
+            lote.coordenadas = JSON.parse(lote.coordenadas);
+        });
+
+        const html = generateTerritorioHTML(territorio, lotes);
+
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
+        const page = await browser.newPage();
+
+        // Definir o tamanho da página para A4 em mm convertidos para pixels
+        const A4_WIDTH_MM = 297; // Alterado para paisagem
+        const A4_HEIGHT_MM = 210; // Alterado para paisagem
+        const mmToPx = (mm) => mm * 3.779528; // Aproximação de conversão de mm para pixels (96 DPI)
+
+        await page.setViewport({
+            width: Math.round(mmToPx(A4_WIDTH_MM)),
+            height: Math.round(mmToPx(A4_HEIGHT_MM)),
+            deviceScaleFactor: 2, // Melhor qualidade para imagens
+        });
+
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        await page.waitForFunction('window.mapReady === true', { timeout: 20000 });
+
+        if (format === 'pdf') {
+            const pdfBuffer = await page.pdf({
+                format: 'A4',
+                printBackground: true,
+                landscape: true, // Alterado para paisagem
+                margin: {
+                    top: '25mm',
+                    bottom: '25mm',
+                    left: '25mm',
+                    right: '25mm',
+                },
+            });
+            await browser.close();
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="territorio_${territorioId}.pdf"`);
+            res.end(pdfBuffer, 'binary');
+        } else if (format === 'png') {
+            const screenshotBuffer = await page.screenshot({
+                fullPage: true,
+                omitBackground: false,
+            });
+            await browser.close();
+
+            res.setHeader('Content-Type', 'image/png');
+            res.setHeader('Content-Disposition', `attachment; filename="territorio_${territorioId}.png"`);
+            res.end(screenshotBuffer, 'binary');
+        } else {
+            await browser.close();
+            res.status(400).json({ message: 'Formato não suportado. Use ?format=pdf ou ?format=png' });
+        }
+    } catch (error) {
+        console.error('Erro ao exportar território:', error);
+        res.status(500).json({ message: 'Erro ao exportar território' });
+    }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Fallback para rotas não encontradas
 app.use((req, res) => {
     res.status(404).json({ message: 'Rota não encontrada' });
 });
 
-// Configuração do servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor rodando na porta http://localhost:${PORT}`);
