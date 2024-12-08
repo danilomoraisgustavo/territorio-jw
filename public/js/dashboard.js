@@ -124,7 +124,7 @@ function loadAllTerritoriesOnMap2() {
         })
         .then(data => {
             if (!Array.isArray(data)) {
-                console.error('Os dados retornados de /api/territorios não são um array:', data);
+                console.error('Os dados retornados de /api/territorios-map2 não são um array:', data);
                 return;
             }
 
@@ -153,6 +153,25 @@ function loadAllTerritoriesOnMap2() {
                     if (coord && typeof coord.lat === 'number' && typeof coord.lng === 'number') {
                         bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
                     }
+                });
+
+                // Adicionar um marcador com o identificador do território no centro do polígono
+                const centroid = getPolygonCentroid(territoryCoords);
+                const labelMarker = new google.maps.Marker({
+                    position: centroid,
+                    map: map2,
+                    label: {
+                        text: territorio.identificador.toString(),
+                        fontWeight: 'bold',
+                        color: '#FFFFFF',        // Cor branca
+                        fontSize: '20px'         // Tamanho maior da fonte
+                    },
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 0, // ícone invisível (apenas o label aparece)
+                        fillOpacity: 0
+                    },
+                    clickable: false
                 });
 
                 if (Array.isArray(territorio.lotes)) {
@@ -192,6 +211,17 @@ function loadAllTerritoriesOnMap2() {
             }
         })
         .catch(error => console.error('Erro ao carregar territórios no map2:', error));
+}
+
+// Função para calcular o centróide de um polígono simples
+function getPolygonCentroid(coords) {
+    let latSum = 0;
+    let lngSum = 0;
+    coords.forEach(c => {
+        latSum += c.lat;
+        lngSum += c.lng;
+    });
+    return { lat: latSum / coords.length, lng: lngSum / coords.length };
 }
 
 function setupPolygonDeleteListener(polygon) {
