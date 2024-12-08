@@ -286,8 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="action-btn edit-btn" data-id="${user.id}"><i class="fas fa-edit"></i> Editar</button>
                             <button class="action-btn delete-btn" data-id="${user.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
                             ${user.init
-                                ? `<button class="action-btn restrict-btn" data-id="${user.id}"><i class="fas fa-lock"></i> Restringir</button>`
-                                : `<button class="action-btn accept-btn" data-id="${user.id}"><i class="fas fa-unlock"></i> Aceitar</button>`}
+                            ? `<button class="action-btn restrict-btn" data-id="${user.id}"><i class="fas fa-lock"></i> Restringir</button>`
+                            : `<button class="action-btn accept-btn" data-id="${user.id}"><i class="fas fa-unlock"></i> Aceitar</button>`}
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -445,46 +445,221 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Erro ao adicionar usuário:', error));
     });
 
-    document.getElementById('edit-territorio-form-1')?.addEventListener('submit', (e) => {
+    document.getElementById('edit-user-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
-        const territorioId = document.getElementById('edit-territorio-id-1').value;
-        const identificador = document.getElementById('edit-territorio-identificador-1').value.trim();
-        const bairro = document.getElementById('edit-territorio-bairro-1').value.trim();
+        const userId = document.getElementById('edit-user-id').value;
+        const username = document.getElementById('edit-username').value;
+        const email = document.getElementById('edit-email').value;
+        const endereco = document.getElementById('edit-endereco').value;
+        const celular = document.getElementById('edit-celular').value;
+        const designacao = document.getElementById('edit-designacao').value;
 
-        if (!identificador || !bairro) {
-            alert('Por favor, preencha todos os campos.');
-            return;
-        }
+        console.log(`Editando usuário ID ${userId}`);
 
-        fetch(`/api/territorios/${territorioId}`, {
+        fetch(`/api/users/${userId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identificador, bairro })
+            body: JSON.stringify({ username, email, endereco, celular, designacao })
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Erro ao editar território: ${response.statusText}`);
+                    throw new Error(`Erro ao editar usuário: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
                 alert(data.message);
-                document.getElementById('edit-territorio-form-1').reset();
-                document.getElementById('edit-territorio-modal-1').style.display = 'none';
+                document.getElementById('edit-user-form').reset();
+                document.getElementById('edit-user-modal').style.display = 'none';
+                loadUsers();
+                updateTotalUsuarios();
+            })
+            .catch(error => console.error('Erro ao editar usuário:', error));
+    });
+
+    function initialize() {
+        const activeSection = document.querySelector('.section.active');
+        if (activeSection.id === 'usuarios') {
+            loadUsers();
+        }
+    }
+
+    initialize();
+
+    // Seção de Território
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            tabLinks.forEach(link => link.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            link.classList.add('active');
+            const tab = link.getAttribute('data-tab');
+            document.getElementById(tab).classList.add('active');
+
+            if (tab === 'gerenciamento') {
+                loadTerritorios();
+                fitMapGerenciamento();
+            }
+        });
+    });
+
+    document.getElementById('draw-territory-btn').addEventListener('click', () => {
+        if (isEditing || isDeleting) {
+            toggleEditingMode(false);
+            toggleDeletingMode(false);
+        }
+        isDrawingTerritory = true;
+        isDrawingLots = false;
+        drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    });
+
+    document.getElementById('draw-lots-btn').addEventListener('click', () => {
+        if (!territoryShape) {
+            alert('Por favor, desenhe primeiro o território principal.');
+            return;
+        }
+        if (isEditing || isDeleting) {
+            toggleEditingMode(false);
+            toggleDeletingMode(false);
+        }
+        isDrawingTerritory = false;
+        isDrawingLots = true;
+        drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    });
+
+    function toggleEditingMode(enable) {
+        isEditing = enable;
+        if (isEditing) {
+            setEditing(true);
+            drawingManager.setDrawingMode(null);
+            isDrawingTerritory = false;
+            isDrawingLots = false;
+            // Opcional: adicionar botão de salvar alterações na Gerenciamento
+        } else {
+            setEditing(false);
+        }
+    }
+
+    function toggleDeletingMode(enable) {
+        isDeleting = enable;
+        if (isDeleting) {
+            setDeleting(true);
+            drawingManager.setDrawingMode(null);
+            isDrawingTerritory = false;
+            isDrawingLots = false;
+            setEditing(false);
+        } else {
+            setDeleting(false);
+        }
+    }
+
+    function setEditing(enabled) {
+        if (territoryShape) {
+            territoryShape.setEditable(enabled);
+        }
+        lotShapes.forEach(shape => {
+            shape.setEditable(enabled);
+        });
+        if (enabled) {
+            map.setOptions({ draggableCursor: 'pointer' });
+            mapGerenciamento.setOptions({ draggableCursor: 'pointer' });
+        } else {
+            map.setOptions({ draggableCursor: null });
+            mapGerenciamento.setOptions({ draggableCursor: null });
+        }
+    }
+
+    function setDeleting(enabled) {
+        if (enabled) {
+            map.setOptions({ draggableCursor: 'not-allowed' });
+            mapGerenciamento.setOptions({ draggableCursor: 'not-allowed' });
+        } else {
+            map.setOptions({ draggableCursor: null });
+            mapGerenciamento.setOptions({ draggableCursor: null });
+        }
+    }
+
+    document.getElementById('save-territorio-btn').addEventListener('click', () => {
+        const identificador = document.getElementById('territorio-id').value.trim();
+        const bairro = document.getElementById('territorio-bairro').value.trim();
+        if (!identificador) {
+            alert('Por favor, insira um identificador para o território.');
+            return;
+        }
+        if (!bairro) {
+            alert('Por favor, insira um bairro para o território.');
+            return;
+        }
+
+        if (!territoryShape) {
+            alert('Por favor, desenhe o território principal.');
+            return;
+        }
+
+        let territoryCoordinates = [];
+        territoryShape.getPath().forEach(point => {
+            territoryCoordinates.push({ lat: point.lat(), lng: point.lng() });
+        });
+
+        let lotsData = lotShapes.map(shape => {
+            let shapeCoordinates = [];
+            shape.getPath().forEach(point => {
+                shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
+            });
+            return shapeCoordinates;
+        });
+
+        console.log('Dados a serem enviados:');
+        console.log('Identificador:', identificador);
+        console.log('Bairro:', bairro);
+        console.log('Territory:', territoryCoordinates);
+        console.log('Lots:', lotsData);
+
+        fetch('/api/territorios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                identificador: identificador,
+                bairro: bairro,
+                territory: territoryCoordinates,
+                lots: lotsData
+            })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro ao salvar território: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert(data.message);
+                if (territoryShape) {
+                    territoryShape.setMap(null);
+                    territoryShape = null;
+                }
+                lotShapes.forEach(shape => shape.setMap(null));
+                lotShapes = [];
+                document.getElementById('territorio-id').value = '';
+                document.getElementById('territorio-bairro').value = '';
+                document.getElementById('draw-territory-btn').disabled = false;
+                document.getElementById('draw-lots-btn').disabled = true;
                 loadTerritorios();
                 fitMapGerenciamento();
             })
             .catch(error => {
-                console.error('Erro ao editar território:', error);
-                alert('Erro ao editar território. Tente novamente.');
+                console.error('Erro ao salvar território:', error);
+                alert('Erro ao salvar território. Tente novamente.');
             });
     });
 
-    document.getElementById('edit-territorio-form-2')?.addEventListener('submit', (e) => {
+    document.getElementById('edit-territorio-form')?.addEventListener('submit', (e) => {
         e.preventDefault();
-        const territorioId = document.getElementById('edit-territorio-id-2').value;
-        const identificador = document.getElementById('edit-territorio-identificador-2').value.trim();
-        const bairro = document.getElementById('edit-territorio-bairro-2').value.trim();
+        const territorioId = document.getElementById('edit-territorio-id').value;
+        const identificador = document.getElementById('edit-territorio-identificador').value.trim();
+        const bairro = document.getElementById('edit-territorio-bairro').value.trim();
 
         if (!identificador || !bairro) {
             alert('Por favor, preencha todos os campos.');
@@ -504,8 +679,8 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(data => {
                 alert(data.message);
-                document.getElementById('edit-territorio-form-2').reset();
-                document.getElementById('edit-territorio-modal-2').style.display = 'none';
+                document.getElementById('edit-territorio-form').reset();
+                document.getElementById('edit-territorio-modal').style.display = 'none';
                 loadTerritorios();
                 fitMapGerenciamento();
             })
@@ -577,8 +752,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openEditTerritorioModal(territorioId) {
-        // Decidir qual modal abrir com base na lógica do aplicativo
-        // Aqui, estamos abrindo o segundo modal como exemplo
         fetch(`/api/territorios/${territorioId}`, {
             method: 'GET'
         })
@@ -591,10 +764,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 const territorio = data.territorio;
                 if (territorio) {
-                    document.getElementById('edit-territorio-id-2').value = territorio.id;
-                    document.getElementById('edit-territorio-identificador-2').value = territorio.identificador;
-                    document.getElementById('edit-territorio-bairro-2').value = territorio.bairro;
-                    document.getElementById('edit-territorio-modal-2').style.display = 'block';
+                    document.getElementById('edit-territorio-id').value = territorio.id;
+                    document.getElementById('edit-territorio-identificador').value = territorio.identificador;
+                    document.getElementById('edit-territorio-bairro').value = territorio.bairro;
+                    document.getElementById('edit-territorio-modal').style.display = 'block';
                 }
             })
             .catch(error => {
@@ -781,15 +954,4 @@ document.addEventListener('DOMContentLoaded', () => {
             mapGerenciamento.fitBounds(bounds);
         }
     }
-
-    // Atualizar a cor do shape baseado no tipo e status
-    function updateShapeColor(shape) {
-        if (shape.type === 'territory') {
-            const color = shape.status ? '#32CD32' : '#FF0000';
-            shape.setOptions({ fillColor: color });
-        } else if (shape.type === 'lot') {
-            const color = shape.status ? '#32CD32' : '#FF0000';
-            shape.setOptions({ fillColor: color });
-        }
-    }
-});
+})
