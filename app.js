@@ -1,5 +1,3 @@
-// app.js
-
 const express = require('express');
 const path = require('path');
 const puppeteer = require('puppeteer');
@@ -10,7 +8,7 @@ const fs = require('fs');
 
 const app = express();
 
-// Configurar conexão com o SQLite3
+// Configuração do SQLite
 const db = new sqlite3.Database('./territorio.db', (err) => {
     if (err) {
         console.error('Erro ao conectar com o banco de dados SQLite:', err.message);
@@ -37,7 +35,7 @@ function dbRun(sql, params = []) {
     });
 }
 
-// Verifica se a coluna bairro existe
+// Ajuste de tabela
 (async () => {
     const resAll = await dbAll("PRAGMA table_info(territorios)");
     const hasBairro = resAll.some(col => col.name === 'bairro');
@@ -46,7 +44,6 @@ function dbRun(sql, params = []) {
     }
 })();
 
-// Criar tabelas
 db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
@@ -76,7 +73,6 @@ db.run(`CREATE TABLE IF NOT EXISTS lotes (
     FOREIGN KEY (territorio_id) REFERENCES territorios(id)
 )`);
 
-// Sessão
 app.use(session({
     secret: 'seuSegredoAqui',
     resave: false,
@@ -120,12 +116,38 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'views/index.html'));
 });
 
-app.get('/dashboard', isAuthenticated, (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/dashboard.html'));
+// Endpoint de login web original
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        const user = await dbGet('SELECT * FROM users WHERE email = ?', [email]);
+
+        if (!user) {
+            return res.status(400).json({ message: 'Email não encontrado' });
+        }
+
+        if (!user.init) {
+            return res.status(403).json({ message: 'Usuário ainda não autorizado pelo administrador' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Senha incorreta' });
+        }
+
+        req.session.isLoggedIn = true;
+        req.session.userId = user.id;
+
+        res.json({ message: 'Login bem-sucedido', redirect: '/dashboard' });
+    } catch (error) {
+        console.error('Erro no processo de login:', error);
+        return res.status(500).json({ message: 'Erro no servidor' });
+    }
 });
 
-// Login
-app.post('/login', async (req, res) => {
+// Novo endpoint específico para o aplicativo Dart
+app.post('/login-app', async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -145,15 +167,18 @@ app.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Senha incorreta' });
         }
 
-        req.session.isLoggedIn = true;
-        req.session.userId = user.id;
-
-        res.json({ message: 'Login bem-sucedido', redirect: '/dashboard' });
+        res.json({
+            message: 'Login bem-sucedido',
+            username: user.username,
+            designacao: user.designacao
+        });
     } catch (error) {
-        console.error('Erro no processo de login:', error);
+        console.error('Erro no processo de login-app:', error);
         return res.status(500).json({ message: 'Erro no servidor' });
     }
-});
+}
+
+);
 
 // Logout
 app.post('/logout', (req, res) => {
@@ -167,7 +192,7 @@ app.post('/logout', (req, res) => {
     });
 });
 
-// user-info
+// user-info (somente para web)
 app.get('/user-info', isAuthenticated, async (req, res) => {
     try {
         const userId = req.session.userId;
@@ -209,7 +234,7 @@ app.post('/register', async (req, res) => {
     }
 });
 
-// Rotas de API para Usuários
+// Rotas de usuários
 app.get('/api/users/count', authorizeRoles(['Administrador', 'Superintendente de Serviço', 'Superintendente de Território']), async (req, res) => {
     try {
         const result = await dbGet('SELECT COUNT(*) as count FROM users');
@@ -398,10 +423,8 @@ app.get('/api/territorios', authorizeTerritorioAccess, async (req, res) => {
     }
 });
 
-// Novo endpoint para fornecer dados completos dos territórios para o map2
 app.get('/api/territorios-map2', authorizeTerritorioAccess, async (req, res) => {
     try {
-        // Busca todos os territórios do banco, incluindo o campo territory
         const territorios = await dbAll('SELECT id, identificador, territory, status FROM territorios');
 
         const results = [];
@@ -440,7 +463,6 @@ app.get('/api/territorios-map2', authorizeTerritorioAccess, async (req, res) => 
         res.status(500).json({ message: 'Erro ao buscar territórios (map2)' });
     }
 });
-
 
 app.get('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) => {
     const territorioId = req.params.id;
@@ -528,7 +550,6 @@ app.put('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) => {
     }
 });
 
-// Função para gerar HTML dinâmico com ajustes finais de margens e alinhamento
 function generateTerritorioHTML(territorio, lotes) {
     const territorioColor = territorio.status ? '#32CD32' : '#FF0000';
     let lotesJs = '';
@@ -556,10 +577,10 @@ function generateTerritorioHTML(territorio, lotes) {
 <title>Cartão de Mapa de Território</title>
 <style>
   @page {
-    margin: 25mm; /* Margens iguais em todas as direções */
+    margin: 25mm;
   }
   body {
-    margin: 0; /* Remove as margens padrão do body */
+    margin: 0;
     padding: 0;
     width: 100%;
     height: 100%;
@@ -575,7 +596,7 @@ function generateTerritorioHTML(territorio, lotes) {
 
   .content {
     width: 100%;
-    padding: 25mm; /* Margens internas iguais */
+    padding: 25mm;
     box-sizing: border-box;
     text-align: justify;
   }
@@ -668,7 +689,6 @@ function generateTerritorioHTML(territorio, lotes) {
     accessToken: 'pk.eyJ1IjoiZGFuaWxvbW9yYWlzIiwiYSI6ImNsdzZocmJ5eDFqenoyanFzenBoMTc4c28ifQ._RiYYX1oIBe7_MBpTyYWxQ'
     }).addTo(map);
 
-
     L.polygon(territoryCoords, {
       color: '${territorioColor}',
       fillColor: '${territorioColor}',
@@ -686,7 +706,6 @@ function generateTerritorioHTML(territorio, lotes) {
 </html>`;
 }
 
-// Rota de exportação corrigida
 app.get('/api/territorios/:id/export', authorizeTerritorioAccess, async (req, res) => {
     const territorioId = req.params.id;
     const format = req.query.format || 'pdf';
@@ -710,15 +729,14 @@ app.get('/api/territorios/:id/export', authorizeTerritorioAccess, async (req, re
         });
         const page = await browser.newPage();
 
-        // Definir o tamanho da página para A4 em mm convertidos para pixels
-        const A4_WIDTH_MM = 297; // Alterado para paisagem
-        const A4_HEIGHT_MM = 210; // Alterado para paisagem
-        const mmToPx = (mm) => mm * 3.779528; // Aproximação de conversão de mm para pixels (96 DPI)
+        const A4_WIDTH_MM = 297;
+        const A4_HEIGHT_MM = 210;
+        const mmToPx = (mm) => mm * 3.779528;
 
         await page.setViewport({
             width: Math.round(mmToPx(A4_WIDTH_MM)),
             height: Math.round(mmToPx(A4_HEIGHT_MM)),
-            deviceScaleFactor: 2, // Melhor qualidade para imagens
+            deviceScaleFactor: 2,
         });
 
         await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -728,7 +746,7 @@ app.get('/api/territorios/:id/export', authorizeTerritorioAccess, async (req, re
             const pdfBuffer = await page.pdf({
                 format: 'A4',
                 printBackground: true,
-                landscape: true, // Alterado para paisagem
+                landscape: true,
                 margin: {
                     top: '25mm',
                     bottom: '25mm',
