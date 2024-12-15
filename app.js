@@ -7,6 +7,12 @@ const bcrypt = require('bcryptjs');
 const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const fs = require('fs');
+const cors = require('cors');
+
+app.use(cors({ 
+    origin: '*', 
+
+}));
 
 const app = express();
 
