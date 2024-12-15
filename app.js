@@ -7,14 +7,8 @@ const bcrypt = require('bcryptjs');
 const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const fs = require('fs');
-const cors = require('cors');
 
 const app = express();
-
-app.use(cors({ 
-    origin: '*'
-}));
-
 
 // Configurar conexão com o SQLite3
 const db = new sqlite3.Database('./territorio.db', (err) => {
@@ -83,16 +77,11 @@ db.run(`CREATE TABLE IF NOT EXISTS lotes (
 )`);
 
 // Sessão
-// Ajuste sameSite e secure conforme o ambiente. Para testes locais (HTTP), secure: false e sameSite: 'None'.
 app.use(session({
     secret: 'seuSegredoAqui',
     resave: false,
     saveUninitialized: false,
-    cookie: {
-        secure: false, // false se estiver usando HTTP. Se estiver usando HTTPS em produção, mude para true.
-        sameSite: 'None', // necessário para permitir envio de cookies cross-site
-        httpOnly: false
-    }
+    cookie: { secure: false }
 }));
 
 app.use(express.urlencoded({ extended: true }));
@@ -412,6 +401,7 @@ app.get('/api/territorios', authorizeTerritorioAccess, async (req, res) => {
 // Novo endpoint para fornecer dados completos dos territórios para o map2
 app.get('/api/territorios-map2', authorizeTerritorioAccess, async (req, res) => {
     try {
+        // Busca todos os territórios do banco, incluindo o campo territory
         const territorios = await dbAll('SELECT id, identificador, territory, status FROM territorios');
 
         const results = [];
@@ -450,6 +440,7 @@ app.get('/api/territorios-map2', authorizeTerritorioAccess, async (req, res) => 
         res.status(500).json({ message: 'Erro ao buscar territórios (map2)' });
     }
 });
+
 
 app.get('/api/territorios/:id', authorizeTerritorioAccess, async (req, res) => {
     const territorioId = req.params.id;
@@ -719,14 +710,15 @@ app.get('/api/territorios/:id/export', authorizeTerritorioAccess, async (req, re
         });
         const page = await browser.newPage();
 
-        const A4_WIDTH_MM = 297;
-        const A4_HEIGHT_MM = 210;
-        const mmToPx = (mm) => mm * 3.779528;
+        // Definir o tamanho da página para A4 em mm convertidos para pixels
+        const A4_WIDTH_MM = 297; // Alterado para paisagem
+        const A4_HEIGHT_MM = 210; // Alterado para paisagem
+        const mmToPx = (mm) => mm * 3.779528; // Aproximação de conversão de mm para pixels (96 DPI)
 
         await page.setViewport({
             width: Math.round(mmToPx(A4_WIDTH_MM)),
             height: Math.round(mmToPx(A4_HEIGHT_MM)),
-            deviceScaleFactor: 2,
+            deviceScaleFactor: 2, // Melhor qualidade para imagens
         });
 
         await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -736,7 +728,7 @@ app.get('/api/territorios/:id/export', authorizeTerritorioAccess, async (req, re
             const pdfBuffer = await page.pdf({
                 format: 'A4',
                 printBackground: true,
-                landscape: true,
+                landscape: true, // Alterado para paisagem
                 margin: {
                     top: '25mm',
                     bottom: '25mm',
