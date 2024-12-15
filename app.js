@@ -9,12 +9,11 @@ const session = require('express-session');
 const fs = require('fs');
 const cors = require('cors');
 
+const app = express();
+
 app.use(cors({ 
     origin: '*', 
-
 }));
-
-const app = express();
 
 // Configurar conexão com o SQLite3
 const db = new sqlite3.Database('./territorio.db', (err) => {
