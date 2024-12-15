@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
 const puppeteer = require('puppeteer');
 const bcrypt = require('bcryptjs');
@@ -7,6 +8,9 @@ const session = require('express-session');
 const fs = require('fs');
 
 const app = express();
+
+// Habilitar CORS
+app.use(cors());
 
 // Configuração do SQLite
 const db = new sqlite3.Database('./territorio.db', (err) => {
@@ -116,7 +120,6 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'views/index.html'));
 });
 
-
 app.get('/dashboard', isAuthenticated, (req, res) => {
     res.sendFile(path.join(__dirname, 'views/dashboard.html'));
 });
@@ -181,9 +184,7 @@ app.post('/login-app', async (req, res) => {
         console.error('Erro no processo de login-app:', error);
         return res.status(500).json({ message: 'Erro no servidor' });
     }
-}
-
-);
+});
 
 // Logout
 app.post('/logout', (req, res) => {
