@@ -116,7 +116,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'views/index.html'));
 });
 
-// Endpoint de login web original
+// Login
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
@@ -132,6 +132,7 @@ app.post('/login', async (req, res) => {
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
+
         if (!isMatch) {
             return res.status(400).json({ message: 'Senha incorreta' });
         }
@@ -145,6 +146,7 @@ app.post('/login', async (req, res) => {
         return res.status(500).json({ message: 'Erro no servidor' });
     }
 });
+
 
 // Novo endpoint específico para o aplicativo Dart
 app.post('/login-app', async (req, res) => {
@@ -789,3 +791,8 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor rodando na porta http://localhost:${PORT}`);
 });
+
+
+
+
+
