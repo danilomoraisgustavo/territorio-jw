@@ -11,10 +11,11 @@ const cors = require('cors');
 
 const app = express();
 
-app.use(cors({
-    origin: 'http://localhost:51697',
+app.use(cors({ 
+    origin: '*',
     credentials: true
 }));
+
 
 // Configurar conexão com o SQLite3
 const db = new sqlite3.Database('./territorio.db', (err) => {
