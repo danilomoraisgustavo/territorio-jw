@@ -4,6 +4,8 @@ const cors = require('cors');
 const session = require('express-session');
 const path = require('path');
 const { Pool } = require('pg');
+const isAuthenticated = require('./middlewares/isAuthenticated');
+
 
 const config = require('./config');
 
@@ -26,9 +28,7 @@ app.use((req, res, next) => {
 app.use(express.static(config.paths.public));
 app.get('/',       (req, res) => res.sendFile(path.join(config.paths.views, 'index.html')));
 app.get('/forgot', (req, res) => res.sendFile(path.join(config.paths.views, 'forgot.html')));
-app.get('/dashboard', isAuthenticated, (req, res) =>
-  res.sendFile(path.join(config.paths.views, 'dashboard.html'))
-);
+app.get('/dashboard',isAuthenticated, (req, res) => res.sendFile(path.join(config.paths.views, 'dashboard.html')));
 
 // routes
 const authRoutes     = require('./routes/authRoutes');
