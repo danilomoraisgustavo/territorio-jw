@@ -43,7 +43,12 @@ async function getUserInfo(req, res) {
   try {
     const user = await userService.getUserInfo(req.session.userId);
     if (!user) return res.status(404).json({ message: 'Usuário não encontrado' });
-    res.json({ username: user.username, designacao: user.designacao });
+    // inclui o email aqui:
+    res.json({
+      username:   user.username,
+      designacao: user.designacao,
+      email:      user.email
+    });
   } catch (error) {
     res.status(500).json({ message: 'Erro servidor' });
   }

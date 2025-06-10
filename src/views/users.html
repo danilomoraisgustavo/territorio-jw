@@ -191,10 +191,23 @@
       </nav>
     </aside>
     <div class="main">
-      <header class="header">
-        <i class='bx bx-menu menu-toggle'></i>
-        <div class="welcome">Olá, <strong>Administrador</strong></div>
-      </header>
+<header class="header">
+  <i class='bx bx-menu menu-toggle'></i>
+
+  <!-- boas-vindas com placeholder -->
+  <div class="welcome">Olá, <strong id="welcome-name">…</strong></div>
+
+  <!-- profile + dropdown -->
+  <div class="profile" id="profile">
+    <i class='bx bx-user-circle' id="profileBtn"></i>
+    <span id="user-email">…</span>
+    <div class="dropdown" id="profileDropdown">
+      <a href="/profile"><i class='bx bx-user'></i> Perfil</a>
+      <a href="/settings"><i class='bx bx-cog'></i> Configurações</a>
+      <a href="#" id="logoutBtn"><i class='bx bx-log-out'></i> Sair</a>
+    </div>
+  </div>
+</header>
       <div class="content">
         <h2>Gerenciar Usuários</h2>
         <p>Aqui você pode listar, editar e excluir usuários.</p>
