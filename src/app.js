@@ -30,6 +30,16 @@ app.get('/',       (req, res) => res.sendFile(path.join(config.paths.views, 'ind
 app.get('/forgot', (req, res) => res.sendFile(path.join(config.paths.views, 'forgot.html')));
 app.get('/dashboard',isAuthenticated, (req, res) => res.sendFile(path.join(config.paths.views, 'dashboard.html')));
 
+app.get('/users',    isAuthenticated, (req, res) =>
+  res.sendFile(path.join(config.paths.views, 'users.html'))
+);
+app.get('/reports',  isAuthenticated, (req, res) =>
+  res.sendFile(path.join(config.paths.views, 'reports.html'))
+);
+app.get('/settings', isAuthenticated, (req, res) =>
+  res.sendFile(path.join(config.paths.views, 'settings.html'))
+);
+
 // routes
 const authRoutes     = require('./routes/authRoutes');
 const userRoutes     = require('./routes/userRoutes');
@@ -39,9 +49,11 @@ app.use('/',            authRoutes);
 app.use('/api/users',   userRoutes);
 app.use('/api/password', passwordRoutes);
 
-// 404 handler
+// *** fallback 404 (deve vir por último) ***
 app.use((req, res) => {
-  res.status(404).json({ message: 'Rota não encontrada' });
+  res.status(404).sendFile(path.join(config.paths.views, '404.html'));
 });
+
+
 
 module.exports = app;
