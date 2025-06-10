@@ -1,11 +1,13 @@
-// dashboard.js
+// dashboard.js atualizado
 
 // Variáveis globais
 let map;
 let drawingManager;
 let territoryShape = null;
+let quarteiraoShapes = [];
 let lotShapes = [];
 let isDrawingTerritory = false;
+let isDrawingQuarteiroes = false;
 let isDrawingLots = false;
 let isEditing = false;
 let isDeleting = false;
@@ -15,6 +17,7 @@ let selectedShape = null;
 let map2;
 let allTerritoryShapes = [];
 let allLotShapes = [];
+let allQuarteiraoShapes = [];
 
 // Função initMap
 function initMap() {
@@ -54,9 +57,31 @@ function initMap() {
             drawingManager.setDrawingMode(null);
 
             document.getElementById('draw-territory-btn').disabled = true;
-            document.getElementById('draw-lots-btn').disabled = false;
+            document.getElementById('draw-quarteiroes-btn').disabled = false; // Agora habilita quarteirões primeiro
+            document.getElementById('draw-lots-btn').disabled = true;
 
             isDrawingTerritory = false;
+        } else if (isDrawingQuarteiroes) {
+            newShape.type = 'quarteirao';
+
+            let isValidQuarteirao = true;
+            const path = newShape.getPath();
+            if (territoryShape && path) {
+                for (let i = 0; i < path.getLength(); i++) {
+                    const point = path.getAt(i);
+                    if (!google.maps.geometry.poly.containsLocation(point, territoryShape)) {
+                        isValidQuarteirao = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!isValidQuarteirao) {
+                alert('O quarteirão desenhado está fora do território. Por favor, desenhe dentro do território.');
+                newShape.setMap(null);
+            } else {
+                quarteiraoShapes.push(newShape);
+            }
         } else if (isDrawingLots) {
             newShape.type = 'lot';
 
@@ -112,8 +137,10 @@ function loadAllTerritoriesOnMap2() {
     // Limpa shapes antigos no map2
     allTerritoryShapes.forEach(shape => shape.setMap(null));
     allLotShapes.forEach(shape => shape.setMap(null));
+    allQuarteiraoShapes.forEach(shape => shape.setMap(null));
     allTerritoryShapes = [];
     allLotShapes = [];
+    allQuarteiraoShapes = [];
 
     fetch('/api/territorios-map2', { method: 'GET' })
         .then(response => {
@@ -155,25 +182,48 @@ function loadAllTerritoriesOnMap2() {
                     }
                 });
 
-                // Adicionar um marcador com o identificador do território no centro do polígono
+                // Marcador com o identificador do território no centro
                 const centroid = getPolygonCentroid(territoryCoords);
-                const labelMarker = new google.maps.Marker({
+                new google.maps.Marker({
                     position: centroid,
                     map: map2,
                     label: {
                         text: territorio.identificador.toString(),
                         fontWeight: 'bold',
-                        color: '#FFFFFF',        // Cor branca
-                        fontSize: '20px'         // Tamanho maior da fonte
+                        color: '#FFFFFF',
+                        fontSize: '20px'
                     },
                     icon: {
                         path: google.maps.SymbolPath.CIRCLE,
-                        scale: 0, // ícone invisível (apenas o label aparece)
+                        scale: 0,
                         fillOpacity: 0
                     },
                     clickable: false
                 });
 
+                // Desenhar quarteirões se houver
+                if (Array.isArray(territorio.quarteiroes)) {
+                    territorio.quarteiroes.forEach(quarteirao => {
+                        if (!Array.isArray(quarteirao.coordenadas)) return;
+                        const qColor = quarteirao.status ? '#32CD32' : '#FFA500';
+                        const qShape = new google.maps.Polygon({
+                            paths: quarteirao.coordenadas,
+                            fillColor: qColor,
+                            fillOpacity: 0.5,
+                            strokeWeight: 2,
+                            map: map2
+                        });
+                        allQuarteiraoShapes.push(qShape);
+
+                        quarteirao.coordenadas.forEach(coord => {
+                            if (coord && typeof coord.lat === 'number' && typeof coord.lng === 'number') {
+                                bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+                            }
+                        });
+                    });
+                }
+
+                // Desenhar lotes se houver
                 if (Array.isArray(territorio.lotes)) {
                     territorio.lotes.forEach(lote => {
                         if (!Array.isArray(lote.coordenadas)) {
@@ -213,7 +263,6 @@ function loadAllTerritoriesOnMap2() {
         .catch(error => console.error('Erro ao carregar territórios no map2:', error));
 }
 
-// Função para calcular o centróide de um polígono simples
 function getPolygonCentroid(coords) {
     let latSum = 0;
     let lngSum = 0;
@@ -242,9 +291,9 @@ function selectShape(shape) {
 
 function deleteShape(shape) {
     if (!shape) return;
-
     let confirmDelete = confirm('Tem certeza de que deseja apagar este polígono?');
     if (confirmDelete) {
+        // Caso território com ID
         if (shape.type === 'territory' && shape.territorioId) {
             fetch(`/api/territorios/${shape.territorioId}`, { method: 'DELETE' })
                 .then(response => {
@@ -257,16 +306,34 @@ function deleteShape(shape) {
                     alert(data.message);
                     shape.setMap(null);
                     territoryShape = null;
-                    lotShapes.forEach(lote => {
-                        lote.setMap(null);
-                    });
+                    quarteiraoShapes.forEach(q => q.setMap(null));
+                    quarteiraoShapes = [];
+                    lotShapes.forEach(lote => lote.setMap(null));
                     lotShapes = [];
                     document.getElementById('draw-territory-btn').disabled = false;
+                    document.getElementById('draw-quarteiroes-btn').disabled = true;
                     document.getElementById('draw-lots-btn').disabled = true;
                 })
                 .catch(error => {
                     console.error('Erro ao excluir território:', error);
                     alert('Erro ao excluir território. Tente novamente.');
+                });
+        } else if (shape.type === 'quarteirao' && shape.quarteiraoId) {
+            fetch(`/api/quarteiroes/${shape.quarteiraoId}`, { method: 'DELETE' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erro ao excluir quarteirão: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    alert(data.message);
+                    shape.setMap(null);
+                    quarteiraoShapes = quarteiraoShapes.filter(q => q !== shape);
+                })
+                .catch(error => {
+                    console.error('Erro ao excluir quarteirão:', error);
+                    alert('Erro ao excluir quarteirão. Tente novamente.');
                 });
         } else if (shape.type === 'lot' && shape.loteId) {
             fetch(`/api/lotes/${shape.loteId}`, { method: 'DELETE' })
@@ -286,14 +353,19 @@ function deleteShape(shape) {
                     alert('Erro ao excluir lote. Tente novamente.');
                 });
         } else {
-            // Caso o shape não tenha um ID (porque não foi salvo no backend), simplesmente removemos do mapa
+            // Caso o shape não tenha ID no backend
             shape.setMap(null);
             if (shape.type === 'territory') {
                 territoryShape = null;
+                quarteiraoShapes.forEach(q => q.setMap(null));
+                quarteiraoShapes = [];
                 lotShapes.forEach(l => l.setMap(null));
                 lotShapes = [];
                 document.getElementById('draw-territory-btn').disabled = false;
+                document.getElementById('draw-quarteiroes-btn').disabled = true;
                 document.getElementById('draw-lots-btn').disabled = true;
+            } else if (shape.type === 'quarteirao') {
+                quarteiraoShapes = quarteiraoShapes.filter(q => q !== shape);
             } else if (shape.type === 'lot') {
                 lotShapes = lotShapes.filter(l => l !== shape);
             }
@@ -659,6 +731,22 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleDeletingMode(false);
         }
         isDrawingTerritory = true;
+        isDrawingQuarteiroes = false;
+        isDrawingLots = false;
+        drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    });
+
+    document.getElementById('draw-quarteiroes-btn').addEventListener('click', () => {
+        if (!territoryShape) {
+            alert('Por favor, desenhe primeiro o território principal.');
+            return;
+        }
+        if (isEditing || isDeleting) {
+            toggleEditingMode(false);
+            toggleDeletingMode(false);
+        }
+        isDrawingTerritory = false;
+        isDrawingQuarteiroes = true;
         isDrawingLots = false;
         drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
     });
@@ -673,6 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleDeletingMode(false);
         }
         isDrawingTerritory = false;
+        isDrawingQuarteiroes = false;
         isDrawingLots = true;
         drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
     });
@@ -697,6 +786,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setEditing(true);
             drawingManager.setDrawingMode(null);
             isDrawingTerritory = false;
+            isDrawingQuarteiroes = false;
             isDrawingLots = false;
             document.getElementById('edit-mode-btn').classList.add('active');
         } else {
@@ -711,6 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setDeleting(true);
             drawingManager.setDrawingMode(null);
             isDrawingTerritory = false;
+            isDrawingQuarteiroes = false;
             isDrawingLots = false;
             setEditing(false);
             document.getElementById('delete-mode-btn').classList.add('active');
@@ -724,6 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (territoryShape) {
             territoryShape.setEditable(enabled);
         }
+        quarteiraoShapes.forEach(q => q.setEditable(enabled));
         lotShapes.forEach(shape => {
             shape.setEditable(enabled);
         });
@@ -768,6 +860,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        let quarteiroesData = [];
+        quarteiraoShapes.forEach(shape => {
+            if (shape.getPath()) {
+                let shapeCoordinates = [];
+                const path = shape.getPath();
+                for (let i = 0; i < path.getLength(); i++) {
+                    const point = path.getAt(i);
+                    shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
+                }
+                quarteiroesData.push(shapeCoordinates);
+            }
+        });
+
         let lotsData = [];
         lotShapes.forEach(shape => {
             if (shape.getPath()) {
@@ -781,7 +886,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        console.log('Dados a serem enviados:', { identificador, bairro, territory: territoryCoordinates, lots: lotsData });
+        console.log('Dados a serem enviados:', { identificador, bairro, territory: territoryCoordinates, quarteiroes: quarteiroesData, lots: lotsData });
 
         fetch('/api/territorios', {
             method: 'POST',
@@ -790,6 +895,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 identificador: identificador,
                 bairro: bairro,
                 territory: territoryCoordinates,
+                quarteiroes: quarteiroesData,
                 lots: lotsData
             })
         })
@@ -805,11 +911,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     territoryShape.setMap(null);
                     territoryShape = null;
                 }
+                quarteiraoShapes.forEach(q => q.setMap(null));
+                quarteiraoShapes = [];
                 lotShapes.forEach(shape => shape.setMap(null));
                 lotShapes = [];
                 document.getElementById('territorio-id').value = '';
                 document.getElementById('territorio-bairro').value = '';
                 document.getElementById('draw-territory-btn').disabled = false;
+                document.getElementById('draw-quarteiroes-btn').disabled = true;
                 document.getElementById('draw-lots-btn').disabled = true;
             })
             .catch(error => {
@@ -833,6 +942,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        let quarteiroesData = quarteiraoShapes.map(shape => {
+            let shapeCoordinates = [];
+            if (shape.getPath()) {
+                const path = shape.getPath();
+                for (let i = 0; i < path.getLength(); i++) {
+                    const point = path.getAt(i);
+                    shapeCoordinates.push({ lat: point.lat(), lng: point.lng() });
+                }
+            }
+            return {
+                id: shape.quarteiraoId,
+                coordenadas: shapeCoordinates
+            };
+        });
+
         let lotsData = lotShapes.map(shape => {
             let shapeCoordinates = [];
             if (shape.getPath()) {
@@ -853,6 +977,7 @@ document.addEventListener('DOMContentLoaded', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 territory: territoryCoordinates,
+                quarteiroes: quarteiroesData,
                 lots: lotsData
             })
         })
@@ -936,15 +1061,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.json();
             })
             .then(data => {
-                // Verificação dos dados retornados
                 if (!data || !data.territorio || !Array.isArray(data.territorio.territory)) {
                     console.error('Dados do território inválidos ou territory não é um array:', data);
                     alert('Não foi possível visualizar o território. Dados inválidos retornados do servidor.');
                     return;
-                }
-
-                if (!Array.isArray(data.lotes)) {
-                    console.warn('lotes não é um array ou está ausente. Continuando sem lotes.');
                 }
 
                 showTerritorioOnMap(data);
@@ -957,12 +1077,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showTerritorioOnMap(data) {
         const territorio = data.territorio;
+        const quarteiroes = Array.isArray(data.quarteiroes) ? data.quarteiroes : [];
         const lotes = Array.isArray(data.lotes) ? data.lotes : [];
 
         if (territoryShape) {
             territoryShape.setMap(null);
             territoryShape = null;
         }
+        quarteiraoShapes.forEach(q => q.setMap(null));
+        quarteiraoShapes = [];
         lotShapes.forEach(shape => shape.setMap(null));
         lotShapes = [];
 
@@ -991,6 +1114,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        quarteiroes.forEach(q => {
+            if (Array.isArray(q.coordenadas)) {
+                const qColor = q.status ? '#32CD32' : '#FFA500';
+                const qShape = new google.maps.Polygon({
+                    paths: q.coordenadas,
+                    fillColor: qColor,
+                    fillOpacity: 0.5,
+                    strokeWeight: 2,
+                    editable: isEditing,
+                    map: map
+                });
+
+                qShape.quarteiraoId = q.id;
+                qShape.type = 'quarteirao';
+                setupPolygonDeleteListener(qShape);
+
+                qShape.addListener('click', () => {
+                    if (isDeleting) {
+                        deleteShape(qShape);
+                    } else if (isEditing) {
+                        selectShape(qShape);
+                    } else {
+                        updateQuarteiraoStatus(q.id, !q.status);
+                    }
+                });
+
+                quarteiraoShapes.push(qShape);
+            } else {
+                console.error('Quarteirão com coordenadas inválidas:', q);
+            }
+        });
+
         lotes.forEach(lote => {
             if (Array.isArray(lote.coordenadas)) {
                 const lotColor = lote.status ? '#32CD32' : '#FF0000';
@@ -1007,7 +1162,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lotShape.type = 'lot';
                 setupPolygonDeleteListener(lotShape);
 
-                lotShape.addListener('click', () => {
+                lotShape.addEventListener('click', () => {
                     if (isDeleting) {
                         deleteShape(lotShape);
                     } else if (isEditing) {
@@ -1071,6 +1226,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             })
             .catch(error => console.error('Erro ao atualizar status do lote:', error));
+    }
+
+    function updateQuarteiraoStatus(qId, newStatus) {
+        fetch(`/api/quarteiroes/${qId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro ao atualizar status do quarteirão: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const updatedQ = quarteiraoShapes.find(q => q.quarteiraoId === qId);
+                if (updatedQ) {
+                    updatedQ.setOptions({
+                        fillColor: newStatus ? '#32CD32' : '#FFA500'
+                    });
+                }
+            })
+            .catch(error => console.error('Erro ao atualizar status do quarteirão:', error));
     }
 
     function deleteTerritorio(territorioId) {

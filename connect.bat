@@ -1,1 +1,0 @@
-ssh -i "territorio.pem" ubuntu@ec2-15-228-52-234.sa-east-1.compute.amazonaws.com

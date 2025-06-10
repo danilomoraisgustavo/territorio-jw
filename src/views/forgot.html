@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Esqueci minha senha</title>
+  <link rel="stylesheet" href="css/forgot.css" />
+  <link rel="shortcut icon" href="/img/favicon.png" type="image/x-icon">
+  <!-- Boxicons -->
+  <link href="https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="form-container">
+    <!-- 1: pedir e-mail -->
+    <div id="step-email" class="form forgot active">
+      <h2>Esqueci minha senha</h2>
+      <div class="input-group">
+        <i class='bx bx-mail-send'></i>
+        <input id="forgot-email" type="email" placeholder="E-mail cadastrado" required />
+      </div>
+      <p id="email-error" class="error-message"></p>
+      <button id="forgot-send-code-btn">Enviar código</button>
+      <a href="/" class="back-link">Voltar ao login</a>
+    </div>
+
+    <!-- 2: inserir código de 6 dígitos -->
+    <div id="step-code" class="form forgot-code">
+      <h2>Verificação em 2 passos</h2>
+      <p class="subtitle">
+        Enviamos um código de 6 dígitos para <strong id="display-email"></strong>. Insira-o abaixo:
+      </p>
+      <div class="code-inputs">
+        <input type="text" id="code-1" maxlength="1" class="code-input" />
+        <input type="text" id="code-2" maxlength="1" class="code-input" />
+        <input type="text" id="code-3" maxlength="1" class="code-input" />
+        <input type="text" id="code-4" maxlength="1" class="code-input" />
+        <input type="text" id="code-5" maxlength="1" class="code-input" />
+        <input type="text" id="code-6" maxlength="1" class="code-input" />
+      </div>
+      <div class="resend-container">
+        <span>Não recebeu o código?</span>
+        <button id="resend-code-btn" class="resend-btn" disabled>
+          Reenviar em <span id="resend-timer">30</span>s
+        </button>
+      </div>
+      <p id="code-error" class="error-message"></p>
+      <button id="forgot-verify-code-btn" disabled>Verificar código</button>
+    </div>
+
+    <!-- 3: redefinir senha -->
+    <div id="step-reset" class="form forgot-reset">
+      <h2>Redefinir senha</h2>
+      <div class="input-group">
+        <i class='bx bxs-lock-alt'></i>
+        <input id="forgot-new-password" type="password" placeholder="Nova senha" required />
+        <i class="bx bx-show password-toggle" onclick="togglePasswordVisibility('forgot-new-password')"></i>
+      </div>
+      <p id="reset-error" class="error-message"></p>
+      <button id="forgot-reset-password-btn">Redefinir senha</button>
+    </div>
+  </div>
+
+  <script>
+    // alterna visibilidade de senha
+    function togglePasswordVisibility(id) {
+      const inp = document.getElementById(id);
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    // controla qual etapa está ativa
+    function goToStep(step) {
+      ['email','code','reset'].forEach(s => {
+        document.getElementById('step-' + s)
+          .classList.toggle('active', s === step);
+      });
+    }
+
+    // ETAPA 1: enviar código
+    const sendBtn = document.getElementById('forgot-send-code-btn');
+    const emailInp = document.getElementById('forgot-email');
+    const emailErr = document.getElementById('email-error');
+    sendBtn.addEventListener('click', async () => {
+      const email = emailInp.value.trim();
+      if (!email) {
+        emailErr.textContent = 'Digite um e-mail válido.';
+        return;
+      }
+      emailErr.textContent = '';
+      // TODO: chamar sua API de envio
+      const res = await fetch('/api/send-reset-code', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email })
+      });
+      if (!res.ok) {
+        emailErr.textContent = 'Falha ao enviar. Tente novamente.';
+        return;
+      }
+      document.getElementById('display-email').innerText = email;
+      goToStep('code');
+      startResendCountdown();
+    });
+
+    // ETAPA 2: inputs de código e verificação
+    const codeInputs = Array.from(document.querySelectorAll('.code-input'));
+    const verifyBtn = document.getElementById('forgot-verify-code-btn');
+    const codeErr   = document.getElementById('code-error');
+
+    codeInputs.forEach((input, idx) => {
+      input.addEventListener('input', () => {
+        if (!/^[0-9]$/.test(input.value)) input.value = '';
+        if (input.value && idx < codeInputs.length - 1) {
+          codeInputs[idx + 1].focus();
+        }
+        const allFilled = codeInputs.every(i => i.value !== '');
+        verifyBtn.disabled = !allFilled;
+        if (allFilled) codeErr.textContent = '';
+      });
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !input.value && idx > 0) {
+          codeInputs[idx - 1].focus();
+        }
+      });
+    });
+
+    verifyBtn.addEventListener('click', async () => {
+      const email = emailInp.value.trim();
+      const code  = codeInputs.map(i => i.value).join('');
+      if (!/^\d{6}$/.test(code)) return;
+      // TODO: chamar sua API de verificação
+      const res = await fetch('/api/verify-reset-code', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email, code })
+      });
+      if (!res.ok) {
+        codeErr.textContent = 'Código inválido.';
+        return;
+      }
+      goToStep('reset');
+    });
+
+    // ETAPA 2: contador e reenvio
+    let timer = 30, intervalRef;
+    const timerEl  = document.getElementById('resend-timer');
+    const resendBtn = document.getElementById('resend-code-btn');
+
+    function startResendCountdown() {
+      resendBtn.disabled = true;
+      timer = 30;
+      timerEl.textContent = timer;
+      clearInterval(intervalRef);
+      intervalRef = setInterval(() => {
+        timerEl.textContent = --timer;
+        if (timer <= 0) {
+          clearInterval(intervalRef);
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Reenviar código';
+        }
+      }, 1000);
+    }
+
+    resendBtn.addEventListener('click', async () => {
+      if (resendBtn.disabled) return;
+      // TODO: chamar sua API de reenvio
+      await fetch('/api/send-reset-code', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ email: emailInp.value.trim() })
+      });
+      startResendCountdown();
+    });
+
+    // ETAPA 3: redefinir senha
+    document
+      .getElementById('forgot-reset-password-btn')
+      .addEventListener('click', async () => {
+        const email = emailInp.value.trim();
+        const code  = codeInputs.map(i => i.value).join('');
+        const pwd   = document.getElementById('forgot-new-password').value.trim();
+        if (!pwd) return;
+        // TODO: chamar sua API de reset
+        const res = await fetch('/api/reset-password', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ email, code, newPassword: pwd })
+        });
+        if (res.ok) {
+          alert('Senha redefinida! Você será redirecionado ao login.');
+          location.href = '/login.html';
+        } else {
+          alert('Erro ao redefinir senha.');
+        }
+      });
+  </script>
+</body>
+</html>

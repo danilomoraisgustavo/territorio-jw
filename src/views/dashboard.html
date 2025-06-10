@@ -1,3 +1,5 @@
+<!-- dashboard.html atualizado -->
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -6,6 +8,7 @@
     <title>Dashboard</title>
     <!-- Link para o arquivo CSS -->
     <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="shortcut icon" href="img/favicon.png" type="image/x-icon">
     <!-- Link para os ícones do Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         referrerpolicy="no-referrer" />
@@ -140,6 +143,8 @@
                             <div class="drawing-buttons">
                                 <button id="draw-territory-btn" class="btn btn-secondary"><i
                                         class="fas fa-draw-polygon"></i> Desenhar Território</button>
+                                <button id="draw-quarteiroes-btn" class="btn btn-secondary" disabled><i
+                                        class="fas fa-border-none"></i> Desenhar Quarteirões</button>
                                 <button id="draw-lots-btn" class="btn btn-secondary" disabled><i
                                         class="fas fa-layer-group"></i> Desenhar Lotes</button>
                                 <button id="edit-mode-btn" class="btn btn-secondary"><i class="fas fa-edit"></i>
@@ -239,7 +244,7 @@
     <script src="js/dashboard.js"></script>
     <script
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAwvAt4l0Pkb1c52FLUE-ttVxm4YZ9J8M&libraries=drawing,geometry&callback=initMap">
-        </script>
+    </script>
 </body>
 
 </html>

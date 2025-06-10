@@ -1,0 +1,210 @@
+/* forgot.css */
+
+/* Fonte e reset básico */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Container do formulário */
+.form-container {
+  background-color: #ffffff;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Cada “passo” do fluxo */
+.form {
+  display: none;
+  flex-direction: column;
+}
+
+.form.active {
+  display: flex;
+}
+
+/* Títulos e subtítulos */
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 1.5rem;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: #555555;
+  margin-bottom: 1rem;
+}
+
+/* Grupo de input com ícone */
+.input-group {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.input-group i {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  transform: translateY(-50%);
+  color: #888888;
+  font-size: 1.1rem;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+  border-color: #5A2D82;
+}
+
+/* Toggle de visibilidade de senha */
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #888888;
+  font-size: 1.1rem;
+}
+
+/* Mensagens de erro */
+.error-message {
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-top: -0.5rem;
+  margin-bottom: 0.75rem;
+  min-height: 1.2em;
+}
+
+/* Botões principais */
+button {
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #5A2D82;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:disabled {
+  background-color: #a0c4e8;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  background-color: #7b3eb1;
+}
+
+/* Link de voltar */
+.back-link {
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #5A2D82;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* Inputs de código */
+.code-inputs {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.code-input {
+  width: calc(100% / 6 - 0.4rem);
+  padding: 0.75rem 0;
+  text-align: center;
+  font-size: 1.2rem;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.code-input:focus {
+  border-color: #5A2D82;
+}
+
+/* Container de reenvio */
+.resend-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #555555;
+  margin-bottom: 1rem;
+}
+
+.resend-btn {
+  background: none;
+  color: #5A2D82;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+}
+
+.resend-btn:disabled {
+  color: #999999;
+  cursor: not-allowed;
+}
+
+.resend-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+/* Responsividade */
+@media (max-width: 480px) {
+  .form-container {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  .input-group input,
+  button {
+    font-size: 0.95rem;
+  }
+
+  .code-input {
+    padding: 0.65rem 0;
+    font-size: 1rem;
+  }
+}

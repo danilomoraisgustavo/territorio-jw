@@ -8,6 +8,7 @@
     <!-- Adicionando Boxicons -->
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="shortcut icon" href="/img/favicon.png" type="image/x-icon">
 </head>
 
 <body>
@@ -44,8 +45,6 @@
                         <div class="input-group">
                             <i class='bx bxs-lock-alt'></i>
                             <input id="signup-password" type="password" placeholder="Senha" required>
-                            <i class="bx bx-show password-toggle"
-                                onclick="togglePasswordVisibility('signup-password')"></i>
                             <span class="error-message"></span>
                         </div>
                         <div class="input-group">
@@ -81,8 +80,9 @@
                         </div>
                         <button id="signin-btn">Entrar</button>
                         <p>
-                            <b>Esqueceu sua senha?</b>
+                            <a href="/forgot" class="pointer forgot-link">Esqueceu sua senha?</a>
                         </p>
+
                         <p>
                             <span>Não tem uma conta?</span>
                             <b onclick="toggle()" class="pointer">Cadastre-se aqui</b>
@@ -98,24 +98,24 @@
         <div class="row content-row">
             <!-- CONTEÚDO LOGIN -->
             <div class="col align-items-center flex-col">
+                <div class="img sign-in">
+                    <img src="/img/logo.png" alt="" height="100px">
+                </div>
                 <div class="text sign-in">
                     <h2>"Ide, portanto, e fazei discípulos"</h2>
                     <p>Mateus 28:19</p>
-                </div>
-                <div class="img sign-in">
-                    <!-- Adicione uma imagem aqui, se desejar -->
                 </div>
             </div>
             <!-- FIM CONTEÚDO LOGIN -->
 
             <!-- CONTEÚDO CADASTRO -->
             <div class="col align-items-center flex-col">
-                <div class="img sign-up">
-                    <!-- Adicione uma imagem aqui, se desejar -->
-                </div>
                 <div class="text sign-up">
                     <h2>"Realize plenamente o seu ministério."</h2>
                     <p>2 Timóteo 4:5</p>
+                </div>
+                <div class="img sign-up">
+                    <img src="/img/logo.png" alt="" height="100px">
                 </div>
             </div>
             <!-- FIM CONTEÚDO CADASTRO -->

@@ -12,8 +12,6 @@
     --insta-color: #E1306C;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600&display=swap');
-
 * {
     font-family: 'Poppins', sans-serif;
     margin: 0;
@@ -72,14 +70,15 @@ body {
     margin: 1rem 0;
 }
 
-.input-group i {
-    position: absolute;
-    top: 50%;
-    left: 1rem;
-    transform: translateY(-50%);
-    font-size: 1.4rem;
-    color: var(--gray-2);
+.input-group i:not(.password-toggle) {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  font-size: 1.5rem;
+  color: var(--gray-2);
 }
+
 
 .input-group input {
     width: 100%;
@@ -106,6 +105,15 @@ body {
     font-size: 1.2rem;
     outline: none;
 }
+
+/* estiliza o link de “Esqueci minha senha” */
+.forgot-link {
+  text-decoration: none;    /* tira a linha */
+  color: var(--black);      /* usa o preto definido nas variáveis */
+  font-weight: bold;        /* negrito */
+  /* cursor: pointer; */     /* já vem da .pointer */
+}
+
 
 .form p {
     margin: 1rem 0;
@@ -219,7 +227,8 @@ body {
 }
 
 .img img {
-    width: 30vw;
+    width: 10rem;
+    height: auto;
     transition: 1s ease-in-out;
     transition-delay: .4s;
 }
@@ -227,13 +236,13 @@ body {
 .text.sign-in h2,
 .text.sign-in p,
 .img.sign-in img {
-    transform: translateX(-250%);
+    transform: translateX(-350%);
 }
 
 .text.sign-up h2,
 .text.sign-up p,
 .img.sign-up img {
-    transform: translateX(250%);
+    transform: translateX(350%);
 }
 
 .container.sign-in .text.sign-in h2,
@@ -445,14 +454,16 @@ input[type="password"]::-ms-clear {
 }
 
 .password-toggle {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    font-size: 1.4rem;
-    color: var(--gray-2);
+  position: absolute;
+  top: 50%;
+  right: 10px;     /* empurra para a direita */
+  left: auto;      /* anula o left:10px do selector genérico */
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 1.4rem;
+  color: var(--gray-2);
 }
+
 
 /* Estilos para o Dashboard */
 
