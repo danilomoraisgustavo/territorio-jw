@@ -26,6 +26,9 @@ app.use((req, res, next) => {
 app.use(express.static(config.paths.public));
 app.get('/',       (req, res) => res.sendFile(path.join(config.paths.views, 'index.html')));
 app.get('/forgot', (req, res) => res.sendFile(path.join(config.paths.views, 'forgot.html')));
+app.get('/dashboard', isAuthenticated, (req, res) =>
+  res.sendFile(path.join(config.paths.views, 'dashboard.html'))
+);
 
 // routes
 const authRoutes     = require('./routes/authRoutes');
