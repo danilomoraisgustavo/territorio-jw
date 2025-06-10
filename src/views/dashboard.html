@@ -1,250 +1,242 @@
-<!-- dashboard.html atualizado -->
-
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-    <meta charset="UTF-8">
-    <title>Dashboard</title>
-    <!-- Link para o arquivo CSS -->
-    <link rel="stylesheet" href="css/dashboard.css">
-    <link rel="shortcut icon" href="img/favicon.png" type="image/x-icon">
-    <!-- Link para os ícones do Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-        referrerpolicy="no-referrer" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – Território JW</title>
+  <!-- Boxicons -->
+  <link href="https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css" rel="stylesheet" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple: #8A2BE2;
+      --purple-dark: #7321B9;
+      --background: #f4f5f7;
+      --white: #ffffff;
+      --text: #333333;
+      --text-light: #666666;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--background);
+      color: var(--text);
+    }
+    .dashboard {
+      display: flex;
+      min-height: 100vh;
+    }
+    /* SIDEBAR */
+    .sidebar {
+      width: 250px;
+      background: var(--purple-dark);
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+    }
+    .sidebar .logo {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+    .sidebar .logo img {
+      width: 32px;
+      height: 32px;
+      margin-right: 0.5rem;
+    }
+    .sidebar .logo h2 {
+      color: var(--white);
+      font-size: 1.25rem;
+    }
+    .sidebar nav ul {
+      list-style: none;
+    }
+    .sidebar nav ul li {
+      margin-bottom: 1rem;
+    }
+    .sidebar nav ul li a {
+      display: flex;
+      align-items: center;
+      color: var(--white);
+      text-decoration: none;
+      padding: 0.5rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .sidebar nav ul li a .bx {
+      font-size: 1.2rem;
+      margin-right: 0.5rem;
+    }
+    .sidebar nav ul li a:hover {
+      background: var(--purple);
+    }
+
+    /* MAIN */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background: var(--white);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header .menu-toggle {
+      display: none;
+      font-size: 1.5rem;
+      color: var(--purple);
+      cursor: pointer;
+    }
+    .header .welcome {
+      font-size: 1.25rem;
+    }
+    .header .profile {
+      display: flex;
+      align-items: center;
+    }
+    .header .profile i {
+      font-size: 1.5rem;
+      color: var(--purple);
+      margin-right: 0.5rem;
+    }
+    .header .profile span {
+      font-weight: 500;
+    }
+
+    .content {
+      padding: 2rem;
+      flex: 1;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: var(--white);
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      position: relative;
+      overflow: hidden;
+    }
+    .card:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--purple);
+    }
+    .card .bx {
+      font-size: 2rem;
+      color: var(--purple);
+      margin-bottom: 1rem;
+    }
+    .card h3 {
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+    .card p {
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+
+    /* MOBILE */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: -250px;
+        top: 0;
+        height: 100%;
+        z-index: 20;
+      }
+      .sidebar.active {
+        transform: translateX(250px);
+      }
+      .header .menu-toggle {
+        display: block;
+      }
+      .main {
+        margin-left: 0;
+      }
+    }
+  </style>
 </head>
-
 <body>
-    <div class="container dashboard-container">
-        <header class="header">
-            <div class="logo">
-                <h1>Meu Dashboard</h1>
-            </div>
-            <div class="user-info">
-                <span id="username">Usuário</span>
-                <button id="logout-btn" class="btn btn-secondary">Sair</button>
-            </div>
-            <div class="toggle-btn">
-                <i class="fas fa-bars"></i>
-            </div>
-        </header>
 
-        <aside class="sidebar">
-            <nav>
-                <ul>
-                    <li><a href="#" data-target="inicio" class="active"><i
-                                class="fas fa-home"></i><span>Início</span></a></li>
-                    <li><a href="#" data-target="usuarios"><i class="fas fa-users"></i><span>Usuários</span></a></li>
-                    <li><a href="#" data-target="territorio"><i class="fas fa-globe"></i><span>Território</span></a>
-                    </li>
-                    <li><a href="#" data-target="designacoes"><i class="fas fa-tasks"></i><span>Designações</span></a>
-                    </li>
-                    <li><a href="#" data-target="relatorios"><i class="fas fa-file-alt"></i><span>Relatórios</span></a>
-                    </li>
-                    <li><a href="#" data-target="configuracoes"><i class="fas fa-cog"></i><span>Configurações</span></a>
-                    </li>
-                </ul>
-            </nav>
-        </aside>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="/logo.png" alt="Logo Território JW" />
+        <h2>Território JW</h2>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="/dashboard"><i class='bx bx-home'></i>Início</a></li>
+          <li><a href="/users"><i class='bx bx-user'></i>Usuários</a></li>
+          <li><a href="/reports"><i class='bx bx-bar-chart-alt-2'></i>Relatórios</a></li>
+          <li><a href="/settings"><i class='bx bx-cog'></i>Configurações</a></li>
+          <li><a href="/logout"><i class='bx bx-log-out'></i>Sair</a></li>
+        </ul>
+      </nav>
+    </aside>
 
-        <main class="main-content">
-            <div class="section-container">
-                <section id="inicio" class="section active">
-                    <div class="card-container">
-                        <div class="card">
-                            <i class="fas fa-user"></i>
-                            <h3>Total de Usuários</h3>
-                            <p id="total-usuarios">Carregando...</p>
-                        </div>
-                        <div class="card">
-                            <i class="fas fa-file-alt"></i>
-                            <h3>Relatórios</h3>
-                            <p>Carregando...</p>
-                        </div>
-                        <div class="card">
-                            <i class="fas fa-comments"></i>
-                            <h3>Mensagens</h3>
-                            <p>Carregando...</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="usuarios" class="section">
-                    <h2>Usuários</h2>
-                    <p>Gerencie os usuários aqui.</p>
-                    <button id="add-user-btn" class="btn btn-primary"><i class="fas fa-user-plus"></i> Adicionar
-                        Usuário</button>
-
-                    <table id="users-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nome de Usuário</th>
-                                <th>Email</th>
-                                <th>Endereço</th>
-                                <th>Celular</th>
-                                <th>Designação</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-
-                    <div id="edit-user-modal" class="modal">
-                        <div class="modal-content">
-                            <span class="close-btn">&times;</span>
-                            <h2>Editar Usuário</h2>
-                            <form id="edit-user-form">
-                                <input type="hidden" id="edit-user-id">
-                                <label for="edit-username">Nome de Usuário:</label>
-                                <input type="text" id="edit-username" name="username" required>
-
-                                <label for="edit-email">Email:</label>
-                                <input type="email" id="edit-email" name="email" required>
-
-                                <label for="edit-endereco">Endereço:</label>
-                                <input type="text" id="edit-endereco" name="endereco">
-
-                                <label for="edit-celular">Celular:</label>
-                                <input type="text" id="edit-celular" name="celular">
-
-                                <label for="edit-designacao">Designação:</label>
-                                <select id="edit-designacao" name="designacao" required>
-                                    <option value="Superintendente de Serviço">Superintendente de Serviço</option>
-                                    <option value="Superintendente de Território">Superintendente de Território</option>
-                                    <option value="Dirigente">Dirigente</option>
-                                    <option value="Publicador">Publicador</option>
-                                </select>
-
-                                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar
-                                    Alterações</button>
-                            </form>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="territorio" class="section">
-                    <h2>Território</h2>
-                    <div class="tab-container">
-                        <ul class="tabs">
-                            <li class="tab-link active" data-tab="cadastro"><i class="fas fa-plus-circle"></i> Cadastro
-                            </li>
-                            <li class="tab-link" data-tab="gerenciamento"><i class="fas fa-edit"></i> Gerenciamento</li>
-                        </ul>
-
-                        <div id="cadastro" class="tab-content active">
-                            <label for="territorio-id">Identificador do Território:</label>
-                            <input type="text" id="territorio-id" name="territorio-id" required>
-
-                            <label for="territorio-bairro">Bairro:</label>
-                            <input type="text" id="territorio-bairro" name="territorio-bairro" required>
-
-                            <div class="drawing-buttons">
-                                <button id="draw-territory-btn" class="btn btn-secondary"><i
-                                        class="fas fa-draw-polygon"></i> Desenhar Território</button>
-                                <button id="draw-quarteiroes-btn" class="btn btn-secondary" disabled><i
-                                        class="fas fa-border-none"></i> Desenhar Quarteirões</button>
-                                <button id="draw-lots-btn" class="btn btn-secondary" disabled><i
-                                        class="fas fa-layer-group"></i> Desenhar Lotes</button>
-                                <button id="edit-mode-btn" class="btn btn-secondary"><i class="fas fa-edit"></i>
-                                    Editar</button>
-                                <button id="delete-mode-btn" class="btn btn-secondary"><i class="fas fa-trash-alt"></i>
-                                    Apagar</button>
-                                <button id="save-territorio-btn" class="btn btn-primary"><i class="fas fa-save"></i>
-                                    Salvar Território</button>
-                                <button id="save-edits-btn" class="btn btn-primary"><i class="fas fa-save"></i> Salvar
-                                    Alterações</button>
-                            </div>
-
-                            <div id="map"></div>
-
-                            <div class="export-container">
-                                <button class="btn btn-export export-toggle-btn"><i class="fas fa-download"></i>
-                                    Exportar</button>
-                                <div class="export-dropdown">
-                                    <a href="#" data-format="pdf"><i class="fas fa-file-pdf"></i> Exportar PDF</a>
-                                    <a href="#" data-format="png"><i class="fas fa-file-image"></i> Exportar PNG</a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="gerenciamento" class="tab-content">
-                            <h3>Mapa de Visualização Geral</h3>
-                            <div id="map2"></div>
-
-                            <h3>Lista de Territórios</h3>
-                            <table id="territorios-table">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Identificador</th>
-                                        <th>Status</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="designacoes" class="section">
-                    <h2>Designações</h2>
-                    <p>Gerencie as designações aqui.</p>
-                </section>
-
-                <section id="relatorios" class="section">
-                    <h2>Relatórios</h2>
-                    <p>Acesse os relatórios aqui.</p>
-                </section>
-
-                <section id="configuracoes" class="section">
-                    <h2>Configurações</h2>
-                    <p>Ajuste as configurações do sistema.</p>
-                </section>
-            </div>
-        </main>
-    </div>
-
-    <div id="add-user-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>Adicionar Novo Usuário</h2>
-            <form id="add-user-form">
-                <label for="add-username">Nome de Usuário:</label>
-                <input type="text" id="add-username" name="username" required>
-
-                <label for="add-email">Email:</label>
-                <input type="email" id="add-email" name="email" required>
-
-                <label for="add-endereco">Endereço:</label>
-                <input type="text" id="add-endereco" name="endereco">
-
-                <label for="add-celular">Celular:</label>
-                <input type="text" id="add-celular" name="celular">
-
-                <label for="add-password">Senha:</label>
-                <input type="password" id="add-password" name="password" required>
-
-                <label for="add-designacao">Designação:</label>
-                <select id="add-designacao" name="designacao" required>
-                    <option value="Superintendente de Serviço">Superintendente de Serviço</option>
-                    <option value="Superintendente de Território">Superintendente de Território</option>
-                    <option value="Dirigente">Dirigente</option>
-                    <option value="Publicador">Publicador</option>
-                </select>
-
-                <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Adicionar
-                    Usuário</button>
-            </form>
+    <!-- Main content -->
+    <div class="main">
+      <header class="header">
+        <i class='bx bx-menu menu-toggle'></i>
+        <div class="welcome">Olá, <strong>Administrador</strong></div>
+        <div class="profile">
+          <i class='bx bx-user-circle'></i>
+          <span>admin@jw.com</span>
         </div>
+      </header>
+
+      <div class="content">
+        <div class="grid">
+          <div class="card">
+            <i class='bx bx-user'></i>
+            <h3>Usuários</h3>
+            <p>Gerencie contas de usuário</p>
+          </div>
+          <div class="card">
+            <i class='bx bx-edit'></i>
+            <h3>Cadastro</h3>
+            <p>Adicione novos membros</p>
+          </div>
+          <div class="card">
+            <i class='bx bx-lock-open'></i>
+            <h3>Recuperação</h3>
+            <p>Envie códigos de reset</p>
+          </div>
+          <div class="card">
+            <i class='bx bx-map'></i>
+            <h3>Mapa</h3>
+            <p>Visualize rotas e paradas</p>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script src="js/dashboard.js"></script>
-    <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAwvAt4l0Pkb1c52FLUE-ttVxm4YZ9J8M&libraries=drawing,geometry&callback=initMap">
-    </script>
+  <script>
+    // Toggle sidebar on mobile
+    document.querySelector('.menu-toggle')
+      .addEventListener('click', () => {
+        document.querySelector('.sidebar').classList.toggle('active');
+      });
+  </script>
 </body>
-
 </html>
