@@ -5,6 +5,7 @@
     .then(data => {
       document.getElementById('welcome-name').textContent = data.username;
       document.getElementById('user-email').textContent  = data.email;
+      document.getElementById('user-name').textContent = data.username;
     })
     .catch(console.error);
 
