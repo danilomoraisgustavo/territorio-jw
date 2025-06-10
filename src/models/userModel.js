@@ -18,15 +18,29 @@ async function create({ username, email, endereco, celular, password, designacao
   return await dbGet(sql, [username, email, endereco, celular, password, designacao, init]);
 }
 
-async function update(id, { username, email, endereco, celular, designacao }) {
+async function update(id, { username, email, endereco, celular, designacao, grupo_campo }) {
   const sql = `
     UPDATE users
-    SET username = $1, email = $2, endereco = $3, celular = $4, designacao = $5
-    WHERE id = $6
+    SET username     = $1,
+        email        = $2,
+        endereco     = $3,
+        celular      = $4,
+        designacao   = $5,
+        grupo_campo  = $6
+    WHERE id = $7
     RETURNING *
   `;
-  return await dbGet(sql, [username, email, endereco, celular, designacao, id]);
+  return await dbGet(sql, [
+    username,
+    email,
+    endereco,
+    celular,
+    designacao,
+    grupo_campo,
+    id
+  ]);
 }
+
 
 async function updatePassword(id, hashedPassword) {
   const sql = `
@@ -48,7 +62,8 @@ async function countAll() {
 
 async function getAll() {
   return await dbAll(
-    'SELECT id, username, email, endereco, celular, designacao, init FROM users',
+    `SELECT id, username, email, endereco, celular, designacao, init, grupo_campo
+     FROM users`,
     []
   );
 }

@@ -4,17 +4,22 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Usuários – JW Territry</title>
-  <!-- Boxicons & Fontes iguais ao dashboard -->
+
+  <!-- CSS global -->
   <link href="https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/dashboard.css"/>
+
+  <!-- DataTables CSS -->
+  <link rel="stylesheet"
+    href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
 </head>
 <body>
   <div class="dashboard">
+    <!-- SIDEBAR -->
     <aside class="sidebar">
-      <!-- mesmo conteúdo da sidebar do dashboard, mas marque "Usuários" ativo -->
       <div class="logo">
-        <img src="/img/logo.png"  alt="Logo"/>
+        <img src="/img/logo.png" alt="Logo"/>
         <h2>JW Territry</h2>
       </div>
       <nav>
@@ -23,40 +28,231 @@
           <li><a href="/users" class="active"><i class='bx bx-user'></i>Usuários</a></li>
           <li><a href="/reports"><i class='bx bx-bar-chart-alt-2'></i>Relatórios</a></li>
           <li><a href="/settings"><i class='bx bx-cog'></i>Configurações</a></li>
-          <li><a href="/logout"><i class='bx bx-log-out'></i>Sair</a></li>
+          <li><a href="#" id="logoutBtn"><i class='bx bx-log-out'></i>Sair</a></li>
         </ul>
       </nav>
     </aside>
+
+    <!-- MAIN -->
     <div class="main">
-<header class="header">
-  <i class='bx bx-menu menu-toggle'></i>
+      <header class="header">
+        <i class='bx bx-menu menu-toggle'></i>
+        <div class="welcome">Olá, <strong id="welcome-name">…</strong></div>
+        <div class="profile" id="profile">
+          <i class='bx bx-user-circle' id="profileBtn"></i>
+          <span id="user-email">…</span>
+          <div class="dropdown" id="profileDropdown">
+            <a href="/profile"><i class='bx bx-user'></i> Perfil</a>
+            <a href="/settings"><i class='bx bx-cog'></i> Configurações</a>
+            <a href="#" id="logoutBtn2"><i class='bx bx-log-out'></i> Sair</a>
+          </div>
+        </div>
+      </header>
 
-  <!-- boas-vindas com placeholder -->
-  <div class="welcome">Olá, <strong id="welcome-name">…</strong></div>
-
-  <!-- profile + dropdown -->
-  <div class="profile" id="profile">
-    <i class='bx bx-user-circle' id="profileBtn"></i>
-    <span id="user-email">…</span>
-    <div class="dropdown" id="profileDropdown">
-      <a href="/profile"><i class='bx bx-user'></i> Perfil</a>
-      <a href="/settings"><i class='bx bx-cog'></i> Configurações</a>
-      <a href="#" id="logoutBtn"><i class='bx bx-log-out'></i> Sair</a>
-    </div>
-  </div>
-</header>
       <div class="content">
         <h2>Gerenciar Usuários</h2>
-        <p>Aqui você pode listar, editar e excluir usuários.</p>
+        <table id="usersTable" class="display" style="width:100%">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Designação</th>
+              <th>Grupo Campo</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+        </table>
       </div>
     </div>
   </div>
-  <script src="/js/dashboard.js"></script>
+
+  <!-- Modal de edição -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="editClose">&times;</span>
+      <h3>Editar Usuário</h3>
+      <div class="form-group">
+        <label for="editName">Nome</label>
+        <input type="text" id="editName"/>
+      </div>
+      <div class="form-group">
+        <label for="editEmail">E-mail</label>
+        <input type="email" id="editEmail"/>
+      </div>
+      <div class="form-group">
+        <label for="editRole">Designação</label>
+        <select id="editRole">
+          <option>Dirigente</option>
+          <option>Superintendente de Território</option>
+          <option>Superintendente de Serviço</option>
+          <option>Administrador</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="editGroup">Grupo Campo</label>
+        <select id="editGroup">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+      <button id="saveEdit">Salvar</button>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script
+    src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js">
+  </script>
   <script>
-    document.querySelector('.menu-toggle')
-      .addEventListener('click', () => {
-        document.querySelector('.sidebar').classList.toggle('active');
+  $(document).ready(function(){
+    // pré-fetch user-info
+    fetch('/user-info')
+      .then(r=>r.json())
+      .then(u=>{
+        $('#welcome-name').text(u.username);
+        $('#user-email').text(u.email);
       });
+
+    // inicializa DataTable
+    const table = $('#usersTable').DataTable({
+      ajax: { url: '/api/users', dataSrc: '' },
+      columns: [
+        { data: 'id' },
+        { data: 'username' },
+        { data: 'email' },
+        {
+          data: 'designacao',
+          render: function(val, _, row){
+            const roles = [
+              'Dirigente',
+              'Superintendente de Território',
+              'Superintendente de Serviço',
+              'Administrador'
+            ];
+            let sel = `<select class="role-select" data-id="${row.id}">`;
+            roles.forEach(r=>{
+              sel += `<option${r===val?' selected':''}>${r}</option>`;
+            });
+            sel += '</select>';
+            return sel;
+          }
+        },
+        {
+          data: 'grupo_campo',
+          render: function(val,_,row){
+            let sel = `<select class="group-select" data-id="${row.id}">`;
+            for(let i=1;i<=4;i++){
+              sel+=`<option value="${i}"${i===val?' selected':''}>${i}</option>`;
+            }
+            sel+='</select>';
+            return sel;
+          }
+        },
+        {
+          data: null,
+          orderable: false,
+          render: function(_,__,row){
+            return `
+              <button class="bx bx-lock-open restrict" title="Restringir" data-id="${row.id}"></button>
+              <button class="bx bx-edit edit"     title="Editar"    data-id="${row.id}"></button>
+              <button class="bx bx-trash delete"  title="Excluir"   data-id="${row.id}"></button>
+            `;
+          }
+        }
+      ],
+      language: {
+        url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json'
+      }
+    });
+
+    // trocar designação
+    $('#usersTable').on('change','.role-select', function(){
+      const id = $(this).data('id'),
+            role = $(this).val();
+      $.ajax({
+        url: `/api/users/${id}`,
+        method: 'PUT',
+        contentType:'application/json',
+        data: JSON.stringify({ designacao: role }),
+        success: ()=>table.ajax.reload(null,false)
+      });
+    });
+
+    // trocar grupo
+    $('#usersTable').on('change','.group-select', function(){
+      const id = $(this).data('id'),
+            grp = parseInt($(this).val(),10);
+      $.ajax({
+        url: `/api/users/${id}`,
+        method: 'PUT',
+        contentType:'application/json',
+        data: JSON.stringify({ grupo_campo: grp }),
+        success: ()=>table.ajax.reload(null,false)
+      });
+    });
+
+    // restringir
+    $('#usersTable').on('click','.restrict', function(){
+      const id = $(this).data('id');
+      $.post(`/api/users/${id}/restrict`, ()=>table.ajax.reload(null,false));
+    });
+
+    // excluir
+    $('#usersTable').on('click','.delete', function(){
+      const id = $(this).data('id');
+      if(confirm('Confirma exclusão?'))
+        $.ajax({ url:`/api/users/${id}`, method:'DELETE', success:()=>table.ajax.reload() });
+    });
+
+    // editar modal
+    let currentId;
+    $('#usersTable').on('click','.edit', function(){
+      currentId = $(this).data('id');
+      const row = table.row($(this).closest('tr')).data();
+      $('#editName').val(row.username);
+      $('#editEmail').val(row.email);
+      $('#editRole').val(row.designacao);
+      $('#editGroup').val(row.grupo_campo);
+      $('#editModal').addClass('active');
+    });
+    $('#editClose').click(()=>$('#editModal').removeClass('active'));
+    $('#saveEdit').click(()=>{
+      const payload = {
+        username:    $('#editName').val(),
+        email:       $('#editEmail').val(),
+        designacao:  $('#editRole').val(),
+        grupo_campo: parseInt($('#editGroup').val(),10)
+      };
+      $.ajax({
+        url: `/api/users/${currentId}`,
+        method: 'PUT',
+        contentType:'application/json',
+        data: JSON.stringify(payload),
+        success: ()=>{
+          $('#editModal').removeClass('active');
+          table.ajax.reload(null,false);
+        }
+      });
+    });
+
+    // logout
+    $('#logoutBtn, #logoutBtn2').click(e=>{
+      e.preventDefault();
+      fetch('/logout',{method:'POST'}).then(()=>location.href='/');
+    });
+
+    // toggle sidebar & dropdown
+    $('.menu-toggle').click(()=>$('.sidebar').toggleClass('active'));
+    $('#profileBtn').click(()=>$('#profile').toggleClass('active'));
+    $(document).click(e=>{
+      if(!$('#profile').is(e.target)&&$('#profile').has(e.target).length===0)
+        $('#profile').removeClass('active');
+    });
+  });
   </script>
 </body>
 </html>
