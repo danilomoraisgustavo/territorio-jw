@@ -4,7 +4,6 @@
     .then(res => res.json())
     .then(data => {
       document.getElementById('welcome-name').textContent = data.username;
-      document.getElementById('user-email').textContent  = data.email;
       document.getElementById('designacao').textContent = data.designacao;
     })
     .catch(console.error);
