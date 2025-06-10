@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Usuários – Território JW</title>
+  <!-- Boxicons & Fontes iguais ao dashboard -->
+  <link href="https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* *mesmo bloco de estilos do dashboard* */
+    /* … cole aqui o <style> usado em dashboard.html … */
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <aside class="sidebar">
+      <!-- mesmo conteúdo da sidebar do dashboard, mas marque "Usuários" ativo -->
+      <div class="logo">
+        <img src="/logo.png" alt="Logo"/>
+        <h2>Território JW</h2>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="/dashboard"><i class='bx bx-home'></i>Início</a></li>
+          <li><a href="/users" class="active"><i class='bx bx-user'></i>Usuários</a></li>
+          <li><a href="/reports"><i class='bx bx-bar-chart-alt-2'></i>Relatórios</a></li>
+          <li><a href="/settings"><i class='bx bx-cog'></i>Configurações</a></li>
+          <li><a href="/logout"><i class='bx bx-log-out'></i>Sair</a></li>
+        </ul>
+      </nav>
+    </aside>
+    <div class="main">
+      <header class="header">
+        <i class='bx bx-menu menu-toggle'></i>
+        <div class="welcome">Olá, <strong>Administrador</strong></div>
+      </header>
+      <div class="content">
+        <h2>Gerenciar Usuários</h2>
+        <p>Aqui você pode listar, editar e excluir usuários.</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.querySelector('.menu-toggle')
+      .addEventListener('click', () => {
+        document.querySelector('.sidebar').classList.toggle('active');
+      });
+  </script>
+</body>
+</html>
