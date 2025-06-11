@@ -40,6 +40,9 @@ app.get('/reports',  isAuthenticated, (req, res) =>
 app.get('/settings', isAuthenticated, (req, res) =>
   res.sendFile(path.join(config.paths.views, 'settings.html'))
 );
+app.get('/territories', isAuthenticated, (req, res) =>
+  res.sendFile(path.join(config.paths.views, 'map.html'))
+);
 
 // routes
 const authRoutes     = require('./routes/authRoutes');
