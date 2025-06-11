@@ -132,7 +132,6 @@
         <table id="territoriesTable" class="display" style="width:100%">
           <thead>
             <tr>
-              <th>ID</th>
               <th>Número</th>
               <th>Bairro/Zona</th>
               <th>Ações</th>
@@ -199,7 +198,6 @@ $(function(){
   const table = $('#territoriesTable').DataTable({
     ajax:{url:'/api/territories',dataSrc:''},
     columns:[
-      {data:'id'},
       {data:'number'},
       {data:'zone'},
       {data:null,orderable:false,render:(_,__,r)=>
