@@ -190,7 +190,7 @@
       $('#user-email').text(u.email);
     });
 
-    const mapAll = L.map('territoriesMap').setView([-15.7801,-47.9292],5);
+    const mapAll = L.map('territoriesMap').setView([-6.530128, -49.851721],12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapAll);
     fetch('/api/territories').then(r=>r.json()).then(data=>{
       L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll);
