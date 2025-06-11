@@ -210,7 +210,7 @@
     });
 
     function initDraw(mapId){
-      const map = L.map(mapId).setView([-15.7801,-47.9292],5);
+      const map = L.map(mapId).setView([-6.530128, -49.851721],12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
       const drawn = new L.FeatureGroup();
       map.addLayer(drawn);
