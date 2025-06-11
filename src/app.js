@@ -5,6 +5,7 @@ const session = require('express-session');
 const path = require('path');
 const { Pool } = require('pg');
 const isAuthenticated = require('./middlewares/isAuthenticated');
+const territoryRoutes = require('./routes/territoryRoutes');
 
 
 const config = require('./config');
@@ -48,6 +49,7 @@ const passwordRoutes = require('./routes/passwordRoutes');
 app.use('/',            authRoutes);
 app.use('/api/users',   userRoutes);
 app.use('/api/password', passwordRoutes);
+app.use('/api/territories', territoryRoutes);
 
 // *** fallback 404 (deve vir por último) ***
 app.use((req, res) => {
