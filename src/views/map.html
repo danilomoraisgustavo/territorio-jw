@@ -210,7 +210,14 @@ $(function(){
     language:{url:'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json'}
   });
 
+  let drawMaps = {}, drawLayers = {};
+
   function initDraw(mapId){
+    if(drawMaps[mapId]){
+      drawMaps[mapId].remove();
+      delete drawMaps[mapId];
+      delete drawLayers[mapId];
+    }
     const map = L.map(mapId).setView([-6.530128,-49.851721],12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     const drawn = new L.FeatureGroup();
@@ -220,6 +227,8 @@ $(function(){
       edit:{featureGroup:drawn}
     }));
     map.on(L.Draw.Event.CREATED,e=>drawn.addLayer(e.layer));
+    drawMaps[mapId] = map;
+    drawLayers[mapId] = drawn;
     return drawn;
   }
 
@@ -228,7 +237,6 @@ $(function(){
   $('#addTerritoryBtn').click(()=>{
     $('#addModal').addClass('active');
     setTimeout(()=>{
-      $('#drawMap').empty();
       addDrawn = initDraw('drawMap');
       addDrawn._map.invalidateSize();
     },300);
@@ -236,7 +244,7 @@ $(function(){
   $('#addClose').click(()=>$('#addModal').removeClass('active'));
 
   $('#saveAddTerritory').click(()=>{
-    const geo = addDrawn.toGeoJSON();
+    const geo = drawLayers['drawMap'].toGeoJSON();
     const payload = {
       number: parseInt($('#addNumber').val(),10),
       zone: $('#addZone').val(),
@@ -259,19 +267,18 @@ $(function(){
   });
 
   $('#territoriesTable').on('click','.edit',function(){
-    const id = $(this).data('id');
+    const id=$(this).data('id');
     $.getJSON(`/api/territories/${id}`,d=>{
       $('#editNumber').val(d.number);
       $('#editZone').val(d.zone);
       $('#editModal').addClass('active');
       setTimeout(()=>{
-        $('#editDrawMap').empty();
         editDrawn = initDraw('editDrawMap');
-        L.geoJSON(d.geojson).eachLayer(l=>editDrawn.addLayer(l));
-        editDrawn._map.invalidateSize();
+        L.geoJSON(d.geojson).eachLayer(l=>drawLayers['editDrawMap'].addLayer(l));
+        drawMaps['editDrawMap'].invalidateSize();
       },300);
       $('#saveEditTerritory').off('click').on('click',()=>{
-        const geo2 = editDrawn.toGeoJSON();
+        const geo2 = drawLayers['editDrawMap'].toGeoJSON();
         const p = {
           number: parseInt($('#editNumber').val(),10),
           zone: $('#editZone').val(),
@@ -297,7 +304,7 @@ $(function(){
   $('#editClose').click(()=>$('#editModal').removeClass('active'));
 
   $('#territoriesTable').on('click','.delete',function(){
-    const id = $(this).data('id');
+    const id=$(this).data('id');
     if(confirm('Confirma exclusão?'))
       $.ajax({url:`/api/territories/${id}`,method:'DELETE',success:()=>table.ajax.reload()});
   });
@@ -311,6 +318,7 @@ $(function(){
   });
 });
 </script>
+
 
 </body>
 </html>
