@@ -183,50 +183,100 @@
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
 <script>
 $(function(){
-  fetch('/user-info').then(r=>r.json()).then(u=>{
-    $('#welcome-name').text(u.username);
-    $('#user-email').text(u.email);
-  });
+  fetch('/user-info')
+    .then(r => r.json())
+    .then(u => {
+      $('#welcome-name').text(u.username);
+      $('#user-email').text(u.email);
+    });
 
-  const mapAll = L.map('territoriesMap').setView([-6.530128,-49.851721],12);
+  const mapAll = L.map('territoriesMap').setView([-6.530128, -49.851721], 12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapAll);
   fetch('/api/territories')
-    .then(r=>r.json())
-    .then(data=>L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
+    .then(r => r.json())
+    .then(data => L.geoJSON(data.map(t => t.geojson)).addTo(mapAll));
 
   const table = $('#territoriesTable').DataTable({
-    ajax:{url:'/api/territories',dataSrc:''},
-    columns:[
-      {data:'id'},
-      {data:'number'},
-      {data:'zone'},
-      {data:null,orderable:false,render:(_,__,r)=>
-        `<button class="bx bx-edit edit" data-id="${r.id}"></button>
-         <button class="bx bx-trash delete" data-id="${r.id}"></button>`
+    ajax: { url: '/api/territories', dataSrc: '' },
+    columns: [
+      { data: 'id' },
+      { data: 'number' },
+      { data: 'zone' },
+      {
+        data: null,
+        orderable: false,
+        render: (_, __, r) =>
+          `<button class="bx bx-edit edit" data-id="${r.id}"></button>
+           <button class="bx bx-trash delete" data-id="${r.id}"></button>`
       }
     ],
-    language:{url:'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json'}
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json' }
   });
 
   let drawMaps = {}, drawLayers = {};
 
-  function initDraw(mapId){
-    if(drawMaps[mapId]){
+  function initDraw(mapId) {
+    if (drawMaps[mapId]) {
       drawMaps[mapId].remove();
       delete drawMaps[mapId];
       delete drawLayers[mapId];
     }
-    const map = L.map(mapId).setView([-6.530128,-49.851721],12);
+    const map = L.map(mapId).setView([-6.530128, -49.851721], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
     const drawn = new L.FeatureGroup();
     map.addLayer(drawn);
+
     map.addControl(new L.Control.Draw({
-      draw:{polyline:false,rectangle:false,circle:false,marker:false,circlemarker:false,polygon:{allowIntersection:false}},
-      edit:{featureGroup:drawn}
+      draw: {
+        polyline: false,
+        rectangle: false,
+        circle: false,
+        marker: false,
+        circlemarker: false,
+        polygon: { allowIntersection: false }
+      },
+      edit: { featureGroup: drawn }
     }));
-    map.on(L.Draw.Event.CREATED,e=>drawn.addLayer(e.layer));
+
+    map.on(L.Draw.Event.CREATED, async e => {
+      const layer = e.layer;
+      drawn.addLayer(layer);
+
+      const bbox = layer.getBounds().toBBoxString(); // "south,west,north,east"
+      const query = `
+        [out:json][timeout:25];
+        (way["highway"](${bbox}););
+        out geom;
+      `;
+
+      const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        body: query
+      });
+      const osm = await res.json();
+
+      const lines = osm.elements
+        .filter(el => el.type === 'way' && el.geometry)
+        .map(el => turf.lineString(el.geometry.map(p => [p.lon, p.lat])));
+
+      const fc = turf.featureCollection(lines);
+      const blocks = turf.polygonize(fc);
+      const territoryGeo = layer.toGeoJSON().geometry;
+
+      const filtered = blocks.features.filter(f =>
+        turf.booleanWithin(f, territoryGeo)
+      );
+
+      L.geoJSON(filtered, {
+        style: { color: '#3388ff', weight: 1, fillOpacity: 0.3 }
+      }).addTo(map);
+    });
+
     drawMaps[mapId] = map;
     drawLayers[mapId] = drawn;
     return drawn;
@@ -234,90 +284,100 @@ $(function(){
 
   let addDrawn, editDrawn;
 
-  $('#addTerritoryBtn').click(()=>{
+  $('#addTerritoryBtn').click(() => {
     $('#addModal').addClass('active');
-    setTimeout(()=>{
+    setTimeout(() => {
       addDrawn = initDraw('drawMap');
-      addDrawn._map.invalidateSize();
-    },300);
+      drawMaps['drawMap'].invalidateSize();
+    }, 300);
   });
-  $('#addClose').click(()=>$('#addModal').removeClass('active'));
+  $('#addClose').click(() => $('#addModal').removeClass('active'));
 
-  $('#saveAddTerritory').click(()=>{
+  $('#saveAddTerritory').click(() => {
     const geo = drawLayers['drawMap'].toGeoJSON();
     const payload = {
-      number: parseInt($('#addNumber').val(),10),
+      number: parseInt($('#addNumber').val(), 10),
       zone: $('#addZone').val(),
       geojson: geo
     };
     $.ajax({
-      url:'/api/territories',
-      method:'POST',
-      contentType:'application/json',
-      data:JSON.stringify(payload),
-      success:()=>{
+      url: '/api/territories',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(payload),
+      success: () => {
         $('#addModal').removeClass('active');
         table.ajax.reload();
-        mapAll.eachLayer(l=>l instanceof L.GeoJSON&&mapAll.removeLayer(l));
+        mapAll.eachLayer(l => l instanceof L.GeoJSON && mapAll.removeLayer(l));
         fetch('/api/territories')
-          .then(r=>r.json())
-          .then(data=>L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
+          .then(r => r.json())
+          .then(data => L.geoJSON(data.map(t => t.geojson)).addTo(mapAll));
       }
     });
   });
 
-  $('#territoriesTable').on('click','.edit',function(){
-    const id=$(this).data('id');
-    $.getJSON(`/api/territories/${id}`,d=>{
+  $('#territoriesTable').on('click', '.edit', function(){
+    const id = $(this).data('id');
+    $.getJSON(`/api/territories/${id}`, d => {
       $('#editNumber').val(d.number);
       $('#editZone').val(d.zone);
       $('#editModal').addClass('active');
-      setTimeout(()=>{
+      setTimeout(() => {
         editDrawn = initDraw('editDrawMap');
-        L.geoJSON(d.geojson).eachLayer(l=>drawLayers['editDrawMap'].addLayer(l));
+        L.geoJSON(d.geojson).eachLayer(l => drawLayers['editDrawMap'].addLayer(l));
         drawMaps['editDrawMap'].invalidateSize();
-      },300);
-      $('#saveEditTerritory').off('click').on('click',()=>{
+      }, 300);
+      $('#saveEditTerritory').off('click').on('click', () => {
         const geo2 = drawLayers['editDrawMap'].toGeoJSON();
         const p = {
-          number: parseInt($('#editNumber').val(),10),
+          number: parseInt($('#editNumber').val(), 10),
           zone: $('#editZone').val(),
           geojson: geo2
         };
         $.ajax({
-          url:`/api/territories/${id}`,
-          method:'PUT',
-          contentType:'application/json',
-          data:JSON.stringify(p),
-          success:()=>{
+          url: `/api/territories/${id}`,
+          method: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify(p),
+          success: () => {
             $('#editModal').removeClass('active');
             table.ajax.reload();
-            mapAll.eachLayer(l=>l instanceof L.GeoJSON&&mapAll.removeLayer(l));
+            mapAll.eachLayer(l => l instanceof L.GeoJSON && mapAll.removeLayer(l));
             fetch('/api/territories')
-              .then(r=>r.json())
-              .then(data=>L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
+              .then(r => r.json())
+              .then(data => L.geoJSON(data.map(t => t.geojson)).addTo(mapAll));
           }
         });
       });
     });
   });
-  $('#editClose').click(()=>$('#editModal').removeClass('active'));
+  $('#editClose').click(() => $('#editModal').removeClass('active'));
 
-  $('#territoriesTable').on('click','.delete',function(){
-    const id=$(this).data('id');
-    if(confirm('Confirma exclusão?'))
-      $.ajax({url:`/api/territories/${id}`,method:'DELETE',success:()=>table.ajax.reload()});
+  $('#territoriesTable').on('click', '.delete', function(){
+    const id = $(this).data('id');
+    if (confirm('Confirma exclusão?')) {
+      $.ajax({
+        url: `/api/territories/${id}`,
+        method: 'DELETE',
+        success: () => table.ajax.reload()
+      });
+    }
   });
 
-  $('#logoutBtn, #logoutBtn2').click(e=>{e.preventDefault();fetch('/logout',{method:'POST'}).then(()=>location.href='/');});
-  $('.menu-toggle').click(()=>$('.sidebar').toggleClass('active'));
-  $('#profileBtn').click(()=>$('#profile').toggleClass('active'));
-  $(document).click(e=>{
-    if(!$('#profile').is(e.target)&&$('#profile').has(e.target).length===0)
+  $('#logoutBtn, #logoutBtn2').click(e => {
+    e.preventDefault();
+    fetch('/logout', { method: 'POST' }).then(() => location.href = '/');
+  });
+  $('.menu-toggle').click(() => $('.sidebar').toggleClass('active'));
+  $('#profileBtn').click(() => $('#profile').toggleClass('active'));
+  $(document).click(e => {
+    if (!$('#profile').is(e.target) && $('#profile').has(e.target).length === 0) {
       $('#profile').removeClass('active');
+    }
   });
 });
 </script>
+
 
 
 </body>
