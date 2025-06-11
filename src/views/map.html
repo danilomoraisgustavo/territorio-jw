@@ -184,60 +184,101 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
 $(function(){
-  fetch('/user-info').then(r=>r.json()).then(u=>{
-    $('#welcome-name').text(u.username);
-    $('#user-email').text(u.email);
-  });
+  fetch('/user-info')
+    .then(r => r.json())
+    .then(u => {
+      $('#welcome-name').text(u.username);
+      $('#user-email').text(u.email);
+    });
 
-  const mapAll = L.map('territoriesMap').setView([-6.530128,-49.851721],12);
+  const mapAll = L.map('territoriesMap').setView([-6.530128, -49.851721], 12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapAll);
+
+  const palette = ['#e6194b','#3cb44b','#ffe119','#4363d8','#f58231','#911eb4','#46f0f0','#f032e6','#bcf60c'];
+  const zoneColors = {};
+
   fetch('/api/territories')
-    .then(r=>r.json())
-    .then(data=>L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
+    .then(r => r.json())
+    .then(data => {
+      data.forEach(t => {
+        if (!zoneColors[t.zone]) {
+          const idx = Object.keys(zoneColors).length % palette.length;
+          zoneColors[t.zone] = palette[idx];
+        }
+      });
+      const features = data.map(t => ({
+        type: 'Feature',
+        geometry: t.geojson.geometry || t.geojson,
+        properties: { number: t.number, zone: t.zone }
+      }));
+      L.geoJSON(features, {
+        style: f => ({
+          color: zoneColors[f.properties.zone],
+          weight: 2,
+          fillOpacity: 0.4
+        }),
+        onEachFeature: (f, layer) => {
+          const c = layer.getBounds().getCenter();
+          L.marker(c, {
+            icon: L.divIcon({
+              className: 'zone-label',
+              html: `<span style="
+                background: rgba(255,255,255,0.8);
+                padding: 2px 6px;
+                border-radius: 4px;
+                color: ${zoneColors[f.properties.zone]};
+                font-weight: 600;
+              ">${f.properties.number}</span>`,
+              iconSize: [0,0]
+            })
+          }).addTo(mapAll);
+        }
+      }).addTo(mapAll);
+    });
 
   const table = $('#territoriesTable').DataTable({
-    ajax:{url:'/api/territories',dataSrc:''},
-    columns:[
-      {data:'number'},
-      {data:'zone'},
-      {data:null,orderable:false,render:(_,__,r)=>
-        `<button class="bx bx-edit edit" data-id="${r.id}"></button>
-         <button class="bx bx-trash delete" data-id="${r.id}"></button>`
+    ajax: { url: '/api/territories', dataSrc: '' },
+    columns: [
+      { data: 'number' },
+      { data: 'zone' },
+      {
+        data: null, orderable: false,
+        render: (_,__,r) =>
+          `<button class="bx bx-edit edit" data-id="${r.id}"></button>
+           <button class="bx bx-trash delete" data-id="${r.id}"></button>`
       }
     ],
-    language:{url:'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json'}
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json' }
   });
 
   let drawMaps = {}, drawLayers = {};
-
   function initDraw(mapId){
     if(drawMaps[mapId]){
       drawMaps[mapId].remove();
       delete drawMaps[mapId];
       delete drawLayers[mapId];
     }
-    const map = L.map(mapId).setView([-6.530128,-49.851721],12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    const drawn = new L.FeatureGroup();
-    map.addLayer(drawn);
-    map.addControl(new L.Control.Draw({
-      draw:{polyline:false,rectangle:false,circle:false,marker:false,circlemarker:false,polygon:{allowIntersection:false}},
-      edit:{featureGroup:drawn}
+    const m = L.map(mapId).setView([-6.530128, -49.851721], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+    const fg = new L.FeatureGroup();
+    m.addLayer(fg);
+    m.addControl(new L.Control.Draw({
+      draw: { polyline:false, rectangle:false, circle:false, marker:false, circlemarker:false, polygon:{ allowIntersection:false } },
+      edit: { featureGroup: fg }
     }));
-    map.on(L.Draw.Event.CREATED,e=>drawn.addLayer(e.layer));
-    drawMaps[mapId] = map;
-    drawLayers[mapId] = drawn;
-    return drawn;
+    m.on(L.Draw.Event.CREATED, e => fg.addLayer(e.layer));
+    drawMaps[mapId] = m;
+    drawLayers[mapId] = fg;
+    return fg;
   }
 
   let addDrawn, editDrawn;
-
   $('#addTerritoryBtn').click(()=>{
     $('#addModal').addClass('active');
     setTimeout(()=>{
       addDrawn = initDraw('drawMap');
-      addDrawn._map.invalidateSize();
-    },300);
+      drawMaps['drawMap'].invalidateSize();
+    }, 300);
   });
   $('#addClose').click(()=>$('#addModal').removeClass('active'));
 
@@ -249,33 +290,33 @@ $(function(){
       geojson: geo
     };
     $.ajax({
-      url:'/api/territories',
-      method:'POST',
-      contentType:'application/json',
-      data:JSON.stringify(payload),
-      success:()=>{
+      url: '/api/territories',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(payload),
+      success: ()=>{
         $('#addModal').removeClass('active');
         table.ajax.reload();
-        mapAll.eachLayer(l=>l instanceof L.GeoJSON&&mapAll.removeLayer(l));
+        mapAll.eachLayer(l=> l instanceof L.GeoJSON && mapAll.removeLayer(l));
         fetch('/api/territories')
           .then(r=>r.json())
-          .then(data=>L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
+          .then(data=> L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
       }
     });
   });
 
-  $('#territoriesTable').on('click','.edit',function(){
-    const id=$(this).data('id');
-    $.getJSON(`/api/territories/${id}`,d=>{
+  $('#territoriesTable').on('click','.edit', function(){
+    const id = $(this).data('id');
+    $.getJSON(`/api/territories/${id}`, d=>{
       $('#editNumber').val(d.number);
       $('#editZone').val(d.zone);
       $('#editModal').addClass('active');
       setTimeout(()=>{
         editDrawn = initDraw('editDrawMap');
-        L.geoJSON(d.geojson).eachLayer(l=>drawLayers['editDrawMap'].addLayer(l));
+        L.geoJSON(d.geojson).eachLayer(l=> drawLayers['editDrawMap'].addLayer(l));
         drawMaps['editDrawMap'].invalidateSize();
-      },300);
-      $('#saveEditTerritory').off('click').on('click',()=>{
+      }, 300);
+      $('#saveEditTerritory').off('click').on('click', ()=>{
         const geo2 = drawLayers['editDrawMap'].toGeoJSON();
         const p = {
           number: parseInt($('#editNumber').val(),10),
@@ -283,17 +324,17 @@ $(function(){
           geojson: geo2
         };
         $.ajax({
-          url:`/api/territories/${id}`,
-          method:'PUT',
-          contentType:'application/json',
-          data:JSON.stringify(p),
-          success:()=>{
+          url: `/api/territories/${id}`,
+          method: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify(p),
+          success: ()=>{
             $('#editModal').removeClass('active');
             table.ajax.reload();
-            mapAll.eachLayer(l=>l instanceof L.GeoJSON&&mapAll.removeLayer(l));
+            mapAll.eachLayer(l=> l instanceof L.GeoJSON && mapAll.removeLayer(l));
             fetch('/api/territories')
               .then(r=>r.json())
-              .then(data=>L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
+              .then(data=> L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
           }
         });
       });
@@ -301,21 +342,27 @@ $(function(){
   });
   $('#editClose').click(()=>$('#editModal').removeClass('active'));
 
-  $('#territoriesTable').on('click','.delete',function(){
-    const id=$(this).data('id');
-    if(confirm('Confirma exclusão?'))
-      $.ajax({url:`/api/territories/${id}`,method:'DELETE',success:()=>table.ajax.reload()});
+  $('#territoriesTable').on('click','.delete', function(){
+    const id = $(this).data('id');
+    if(confirm('Confirma exclusão?')){
+      $.ajax({ url:`/api/territories/${id}`, method:'DELETE', success: ()=>table.ajax.reload() });
+    }
   });
 
-  $('#logoutBtn, #logoutBtn2').click(e=>{e.preventDefault();fetch('/logout',{method:'POST'}).then(()=>location.href='/');});
+  $('#logoutBtn, #logoutBtn2').click(e=>{
+    e.preventDefault();
+    fetch('/logout',{method:'POST'}).then(()=>location.href='/');
+  });
   $('.menu-toggle').click(()=>$('.sidebar').toggleClass('active'));
   $('#profileBtn').click(()=>$('#profile').toggleClass('active'));
   $(document).click(e=>{
-    if(!$('#profile').is(e.target)&&$('#profile').has(e.target).length===0)
+    if(!$('#profile').is(e.target) && $('#profile').has(e.target).length===0){
       $('#profile').removeClass('active');
+    }
   });
 });
 </script>
+
 
 
 </body>
