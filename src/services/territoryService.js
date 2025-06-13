@@ -1,6 +1,5 @@
 // src/services/territoryService.js
 const territoryModel = require('../models/territoryModel');
-const lotModel       = require('../models/lotModel');
 
 async function listTerritories() {
   return await territoryModel.getAll();
@@ -21,12 +20,7 @@ async function updateTerritory(id, data) {
 }
 
 async function deleteTerritory(id) {
-  await lotModel.deleteByTerritory(id);
   await territoryModel.deleteById(id);
-}
-
-async function setTerritoryStatus(id, status) {
-  return await territoryModel.setStatus(id, status);
 }
 
 module.exports = {
@@ -34,6 +28,5 @@ module.exports = {
   getTerritory,
   createTerritory,
   updateTerritory,
-  deleteTerritory,
-  setTerritoryStatus
+  deleteTerritory
 };

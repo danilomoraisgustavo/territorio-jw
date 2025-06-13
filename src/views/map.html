@@ -85,14 +85,6 @@
       z-index: 10002;
     }
   </style>
-  <style>
-  .status-toggle {
-    cursor: pointer;
-    font-size: 1.5rem;
-    color: var(--purple);
-    margin-left: 1rem;
-  }
-</style>
 </head>
 <body>
   <div class="dashboard">
@@ -116,7 +108,7 @@
     <div class="main">
       <header class="header">
         <i class='bx bx-menu menu-toggle'></i>
-        <i id="toggleStatusView" class='bx bx-pie-chart-alt status-toggle'></i>
+        
         <div class="welcome">Olá, <strong id="welcome-name">…</strong></div>
         <div class="profile" id="profile">
           <i class='bx bx-user-circle' id="profileBtn"></i>
@@ -206,111 +198,78 @@ $(function(){
   const palette = ['#e6194b','#3cb44b','#ffe119','#4363d8','#f58231','#911eb4','#46f0f0','#f032e6','#bcf60c'];
   const zoneColors = {};
 
-  let territoryLayer, lotLayerGroup;
-
-  function drawTerritories(){
-    if(territoryLayer) mapAll.removeLayer(territoryLayer);
-    fetch('/api/territories')
-      .then(r=>r.json())
-      .then(data=>{
-        data.forEach(t=>{
-          if(!zoneColors[t.zone]){
-            const idx = Object.keys(zoneColors).length % palette.length;
-            zoneColors[t.zone] = palette[idx];
-          }
-        });
-        const feats = data.map(t=>({
-          type:'Feature',
-          geometry: t.geojson.geometry||t.geojson,
-          properties:{ id:t.id, number:t.number, zone:t.zone, status:t.status }
-        }));
-        territoryLayer = L.geoJSON(feats, {
-          style: f=>({
-            color: f.properties.status ? '#3cb44b':'#e6194b',
-            weight:2, fillOpacity:0.2
-          }),
-          onEachFeature: (f,layer)=>{
-            const c = layer.getBounds().getCenter();
-            L.marker(c, {
-              icon: L.divIcon({
-                className:'zone-label',
-                html:`<span style="
-                  background:rgba(255,255,255,0.8);
-                  padding:2px 6px;
-                  border-radius:4px;
-                  color:${zoneColors[f.properties.zone]};
-                  font-weight:600;
-                ">${f.properties.number}</span>`,
-                iconSize:[0,0]
-              })
-            }).addTo(mapAll);
-          }
-        }).addTo(mapAll);
+  fetch('/api/territories')
+    .then(r => r.json())
+    .then(data => {
+      data.forEach(t => {
+        if (!zoneColors[t.zone]) {
+          const idx = Object.keys(zoneColors).length % palette.length;
+          zoneColors[t.zone] = palette[idx];
+        }
       });
-  }
-
-  function drawLots(){
-    if(!lotLayerGroup) lotLayerGroup = L.layerGroup().addTo(mapAll);
-    else lotLayerGroup.clearLayers();
-    fetch('/api/lots')
-      .then(r=>r.json())
-      .then(lots=>{
-        L.geoJSON(lots.map(l=>({
-          type:'Feature',
-          geometry: l.geojson.geometry||l.geojson,
-          properties:{ id:l.id, territory_id:l.territory_id, status:l.status }
-        })), {
-          style: f=>({
-            color: f.properties.status ? '#3cb44b':'#e6194b',
-            weight:1, fillOpacity:0.4
-          }),
-          onEachFeature: (f,layer)=>{
-            layer.on('click',()=>{
-              fetch(`/api/lots/${f.properties.id}/toggle`,{method:'PUT'})
-                .then(()=>{ drawTerritories(); drawLots(); });
-            });
-          }
-        }).addTo(lotLayerGroup);
-      });
-  }
-
-  drawTerritories();
-
-  $('#toggleStatusView').click(()=>{
-    drawLots();
-  });
+      const features = data.map(t => ({
+        type: 'Feature',
+        geometry: t.geojson.geometry || t.geojson,
+        properties: { number: t.number, zone: t.zone }
+      }));
+      L.geoJSON(features, {
+        style: f => ({
+          color: zoneColors[f.properties.zone],
+          weight: 2,
+          fillOpacity: 0.4
+        }),
+        onEachFeature: (f, layer) => {
+          const c = layer.getBounds().getCenter();
+          L.marker(c, {
+            icon: L.divIcon({
+              className: 'zone-label',
+              html: `<span style="
+                background: rgba(255,255,255,0.8);
+                padding: 2px 6px;
+                border-radius: 4px;
+                color: ${zoneColors[f.properties.zone]};
+                font-weight: 600;
+              ">${f.properties.number}</span>`,
+              iconSize: [0,0]
+            })
+          }).addTo(mapAll);
+        }
+      }).addTo(mapAll);
+    });
 
   const table = $('#territoriesTable').DataTable({
-    ajax:{ url:'/api/territories', dataSrc:'' },
-    columns:[
-      { data:'number' },
-      { data:'zone' },
+    ajax: { url: '/api/territories', dataSrc: '' },
+    columns: [
+      { data: 'number' },
+      { data: 'zone' },
       {
-        data:null, orderable:false,
-        render: (_,__,r)=>
+        data: null, orderable: false,
+        render: (_,__,r) =>
           `<button class="bx bx-edit edit" data-id="${r.id}"></button>
            <button class="bx bx-trash delete" data-id="${r.id}"></button>`
       }
     ],
-    language:{ url:'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json' }
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json' }
   });
 
-  let drawMaps={}, drawLayers={};
-  function initDraw(id){
-    if(drawMaps[id]){
-      drawMaps[id].remove();
-      delete drawMaps[id];
-      delete drawLayers[id];
+  let drawMaps = {}, drawLayers = {};
+  function initDraw(mapId){
+    if(drawMaps[mapId]){
+      drawMaps[mapId].remove();
+      delete drawMaps[mapId];
+      delete drawLayers[mapId];
     }
-    const m = L.map(id).setView([-6.530128, -49.851721],12);
+    const m = L.map(mapId).setView([-6.530128, -49.851721], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
-    const fg = new L.FeatureGroup(); m.addLayer(fg);
+    const fg = new L.FeatureGroup();
+    m.addLayer(fg);
     m.addControl(new L.Control.Draw({
-      draw:{polyline:false,rectangle:false,circle:false,marker:false,circlemarker:false,polygon:{allowIntersection:false}},
-      edit:{featureGroup:fg}
+      draw: { polyline:false, rectangle:false, circle:false, marker:false, circlemarker:false, polygon:{ allowIntersection:false } },
+      edit: { featureGroup: fg }
     }));
-    m.on(L.Draw.Event.CREATED,e=>fg.addLayer(e.layer));
-    drawMaps[id]=m; drawLayers[id]=fg;
+    m.on(L.Draw.Event.CREATED, e => fg.addLayer(e.layer));
+    drawMaps[mapId] = m;
+    drawLayers[mapId] = fg;
     return fg;
   }
 
@@ -320,7 +279,7 @@ $(function(){
     setTimeout(()=>{
       addDrawn = initDraw('drawMap');
       drawMaps['drawMap'].invalidateSize();
-    },300);
+    }, 300);
   });
   $('#addClose').click(()=>$('#addModal').removeClass('active'));
 
@@ -332,30 +291,33 @@ $(function(){
       geojson: geo
     };
     $.ajax({
-      url:'/api/territories', method:'POST',
-      contentType:'application/json',
-      data:JSON.stringify(payload),
+      url: '/api/territories',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(payload),
       success: ()=>{
         $('#addModal').removeClass('active');
         table.ajax.reload();
-        mapAll.eachLayer(l=>l instanceof L.GeoJSON && mapAll.removeLayer(l));
-        drawTerritories();
+        mapAll.eachLayer(l=> l instanceof L.GeoJSON && mapAll.removeLayer(l));
+        fetch('/api/territories')
+          .then(r=>r.json())
+          .then(data=> L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
       }
     });
   });
 
-  $('#territoriesTable').on('click','.edit',function(){
-    const id=$(this).data('id');
-    $.getJSON(`/api/territories/${id}`,d=>{
+  $('#territoriesTable').on('click','.edit', function(){
+    const id = $(this).data('id');
+    $.getJSON(`/api/territories/${id}`, d=>{
       $('#editNumber').val(d.number);
       $('#editZone').val(d.zone);
       $('#editModal').addClass('active');
       setTimeout(()=>{
         editDrawn = initDraw('editDrawMap');
-        L.geoJSON(d.geojson).eachLayer(l=>drawLayers['editDrawMap'].addLayer(l));
+        L.geoJSON(d.geojson).eachLayer(l=> drawLayers['editDrawMap'].addLayer(l));
         drawMaps['editDrawMap'].invalidateSize();
-      },300);
-      $('#saveEditTerritory').off('click').on('click',()=>{
+      }, 300);
+      $('#saveEditTerritory').off('click').on('click', ()=>{
         const geo2 = drawLayers['editDrawMap'].toGeoJSON();
         const p = {
           number: parseInt($('#editNumber').val(),10),
@@ -363,14 +325,17 @@ $(function(){
           geojson: geo2
         };
         $.ajax({
-          url:`/api/territories/${id}`, method:'PUT',
-          contentType:'application/json',
-          data:JSON.stringify(p),
+          url: `/api/territories/${id}`,
+          method: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify(p),
           success: ()=>{
             $('#editModal').removeClass('active');
             table.ajax.reload();
-            mapAll.eachLayer(l=>l instanceof L.GeoJSON && mapAll.removeLayer(l));
-            drawTerritories();
+            mapAll.eachLayer(l=> l instanceof L.GeoJSON && mapAll.removeLayer(l));
+            fetch('/api/territories')
+              .then(r=>r.json())
+              .then(data=> L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
           }
         });
       });
@@ -378,10 +343,10 @@ $(function(){
   });
   $('#editClose').click(()=>$('#editModal').removeClass('active'));
 
-  $('#territoriesTable').on('click','.delete',function(){
-    const id=$(this).data('id');
+  $('#territoriesTable').on('click','.delete', function(){
+    const id = $(this).data('id');
     if(confirm('Confirma exclusão?')){
-      $.ajax({url:`/api/territories/${id}`,method:'DELETE',success:()=>table.ajax.reload()});
+      $.ajax({ url:`/api/territories/${id}`, method:'DELETE', success: ()=>table.ajax.reload() });
     }
   });
 
@@ -392,11 +357,14 @@ $(function(){
   $('.menu-toggle').click(()=>$('.sidebar').toggleClass('active'));
   $('#profileBtn').click(()=>$('#profile').toggleClass('active'));
   $(document).click(e=>{
-    if(!$('#profile').is(e.target)&&$('#profile').has(e.target).length===0)
+    if(!$('#profile').is(e.target) && $('#profile').has(e.target).length===0){
       $('#profile').removeClass('active');
+    }
   });
 });
 </script>
+
+
 
 </body>
 </html>
