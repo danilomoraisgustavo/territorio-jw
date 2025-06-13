@@ -1,41 +1,54 @@
+// src/controllers/territoryController.js
 const territoryService = require('../services/territoryService');
 
-async function getAll(req, res) {
-    try {
-        const territories = await territoryService.getAllTerritories();
-        res.status(200).json(territories);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+async function listTerritories(req, res) {
+  const list = await territoryService.listTerritories();
+  res.json(list);
 }
 
-async function getOne(req, res) {
-    try {
-        const territoryId = parseInt(req.params.id);
-        const territory = await territoryService.getTerritory(territoryId);
-        if (!territory) {
-            return res.status(404).json({ error: 'Territory not found' });
-        }
-        res.status(200).json(territory);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+async function getTerritory(req, res) {
+  try {
+    const t = await territoryService.getTerritory(req.params.id);
+    res.json(t);
+  } catch (e) {
+    res.status(404).json({ message: e.message });
+  }
 }
 
-async function updateLot(req, res) {
-    try {
-        const territoryId = parseInt(req.params.id);
-        const lotIndex = parseInt(req.params.lotIndex);
-        const doneStatus = req.body.done;
-        const result = await territoryService.updateLotStatus(territoryId, lotIndex, doneStatus);
-        res.status(200).json(result);
-    } catch (error) {
-        res.status(400).json({ error: error.message });
-    }
+async function createTerritory(req, res) {
+  try {
+    const created = await territoryService.createTerritory(req.body);
+    res.status(201).json(created);
+  } catch (e) {
+    res.status(400).json({ message: e.message });
+  }
+}
+
+async function updateTerritory(req, res) {
+  try {
+    const updated = await territoryService.updateTerritory(
+      req.params.id,
+      req.body
+    );
+    res.json(updated);
+  } catch (e) {
+    res.status(400).json({ message: e.message });
+  }
+}
+
+async function deleteTerritory(req, res) {
+  try {
+    await territoryService.deleteTerritory(req.params.id);
+    res.json({ message: 'Território excluído com sucesso!' });
+  } catch (e) {
+    res.status(400).json({ message: e.message });
+  }
 }
 
 module.exports = {
-    getAll,
-    getOne,
-    updateLot
+  listTerritories,
+  getTerritory,
+  createTerritory,
+  updateTerritory,
+  deleteTerritory
 };

@@ -1,174 +1,370 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Territories</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Territórios – JW Territry</title>
+
+  <link href="https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/dashboard.css"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+
+  <style>
+    #territoriesMap {
+      position: relative;
+      z-index: 1;
+      height: 300px;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .table-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin: 1rem 0;
+    }
+    .btn-add {
+      background: var(--purple);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+    }
+    .btn-add .bx { margin-right: 0.5rem; }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 10000 !important;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      z-index: 10001 !important;
+    }
+    .modal-content .close {
+      position: absolute;
+      top: 0.5rem; right: 0.75rem;
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+    .modal-content .form-group { margin-bottom: 1rem; }
+    .modal-content label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+    .modal-content input, .modal-content select {
+      width: 100%; padding: 0.5rem;
+      border: 1px solid #ccc; border-radius: 4px;
+    }
+    .modal-content button {
+      margin-top: 1rem; width: 100%;
+      padding: 0.5rem; border: none;
+      background: var(--purple); color: #fff;
+      border-radius: 4px; cursor: pointer;
+    }
+    #drawMap, #editDrawMap {
+      height: 300px;
+      margin-top: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      position: relative;
+      z-index: 10002;
+    }
+  </style>
 </head>
 <body>
-    <h1>Territories</h1>
-    <div id="map" style="height: 400px;"></div>
-    <table id="territoriesTable" border="1">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Number</th>
-                <th>Zone</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-    <div id="lotsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
-        <div style="position: relative; width: 80%; height: 80%; margin: 5% auto; background: #fff;">
-            <button id="closeModal" style="position: absolute; top: 10px; right: 10px; z-index: 1000;">X</button>
-            <h2 id="modalTitle" style="text-align: center; margin-top: 10px;">Lotes do Território</h2>
-            <div id="lotsMap" style="width: 100%; height: 90%;"></div>
+  <div class="dashboard">
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="/img/logo.png" alt="Logo"/>
+        <h2>JW Territry</h2>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="/dashboard"><i class='bx bx-home'></i>Início</a></li>
+          <li><a href="/users"><i class='bx bx-user'></i>Usuários</a></li>
+          <li><a href="/reports"><i class='bx bx-bar-chart-alt-2'></i>Relatórios</a></li>
+          <li><a href="/territories" class="active"><i class='bx bx-map'></i>Territórios</a></li>
+          <li><a href="/settings"><i class='bx bx-cog'></i>Configurações</a></li>
+          <li><a href="#" id="logoutBtn"><i class='bx bx-log-out'></i>Sair</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <header class="header">
+        <i class='bx bx-menu menu-toggle'></i>
+        
+        <div class="welcome">Olá, <strong id="welcome-name">…</strong></div>
+        <div class="profile" id="profile">
+          <i class='bx bx-user-circle' id="profileBtn"></i>
+          <span id="user-email">…</span>
+          <div class="dropdown" id="profileDropdown">
+            <a href="/profile"><i class='bx bx-user'></i> Perfil</a>
+            <a href="/settings"><i class='bx bx-cog'></i> Ajustes</a>
+            <a href="#" id="logoutBtn2"><i class='bx bx-log-out'></i> Sair</a>
+          </div>
         </div>
+      </header>
+
+      <div class="content">
+        <h2>Gerenciar Territórios</h2>
+        <div id="territoriesMap"></div>
+
+        <div class="table-toolbar">
+          <button id="addTerritoryBtn" class="btn-add">
+            <i class='bx bx-plus'></i>Adicionar Território
+          </button>
+        </div>
+        <table id="territoriesTable" class="display" style="width:100%">
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Bairro/Zona</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
     </div>
-    <script>
-        var mainMap = L.map('map').setView([-23.532, -46.792], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(mainMap);
+  </div>
 
-        var mainLayers = {};
+  <!-- Modal adicionar -->
+  <div id="addModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="addClose">&times;</span>
+      <h3>Cadastrar Território</h3>
+      <div class="form-group">
+        <label for="addNumber">Número do Território</label>
+        <input type="number" id="addNumber"/>
+      </div>
+      <div class="form-group">
+        <label for="addZone">Bairro/Zona</label>
+        <input type="text" id="addZone"/>
+      </div>
+      <div id="drawMap"></div>
+      <button id="saveAddTerritory">Criar Território</button>
+    </div>
+  </div>
 
-        fetch('/territories')
-            .then(response => response.json())
-            .then(data => {
-                var tbody = document.querySelector('#territoriesTable tbody');
-                data.forEach(territory => {
-                    var color = 'red';
-                    if (territory.status) {
-                        if (territory.updated_at) {
-                            var updatedDate = new Date(territory.updated_at);
-                            var sixMonthsAgo = new Date();
-                            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-                            if (updatedDate > sixMonthsAgo) {
-                                color = 'green';
-                            }
-                        } else {
-                            color = 'red';
-                        }
-                    }
-                    var tr = document.createElement('tr');
-                    var statusText = territory.status ? 'Completo' : 'Incompleto';
-                    tr.innerHTML = '<td>' + territory.id + '</td><td>' + territory.number + '</td><td>' + territory.zone + '</td><td>' + statusText + '</td><td><button class="view-lots-btn" data-id="' + territory.id + '">Ver Lotes</button></td>';
-                    tbody.appendChild(tr);
-                    var territoryLayer = L.geoJSON(territory.geojson, {
-                        style: { color: color, fillColor: color, fillOpacity: 0.3, weight: 2 }
-                    }).addTo(mainMap);
-                    mainLayers[territory.id] = territoryLayer;
-                });
-                document.querySelectorAll('.view-lots-btn').forEach(button => {
-                    button.addEventListener('click', function() {
-                        var territoryId = this.getAttribute('data-id');
-                        openLotsModal(territoryId);
-                    });
-                });
-            });
+  <!-- Modal editar -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="editClose">&times;</span>
+      <h3>Editar Território</h3>
+      <div class="form-group">
+        <label for="editNumber">Número do Território</label>
+        <input type="number" id="editNumber"/>
+      </div>
+      <div class="form-group">
+        <label for="editZone">Bairro/Zona</label>
+        <input type="text" id="editZone"/>
+      </div>
+      <div id="editDrawMap"></div>
+      <button id="saveEditTerritory">Salvar Alterações</button>
+    </div>
+  </div>
 
-        var lotsMap;
-        var lotsLayerGroup;
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script>
+$(function(){
+  fetch('/user-info')
+    .then(r => r.json())
+    .then(u => {
+      $('#welcome-name').text(u.username);
+      $('#user-email').text(u.email);
+    });
 
-        function openLotsModal(territoryId) {
-            fetch('/territories/' + territoryId)
-                .then(response => response.json())
-                .then(territory => {
-                    document.getElementById('lotsModal').style.display = 'block';
-                    document.getElementById('modalTitle').innerText = 'Território ' + territory.number + ' - ' + territory.zone;
-                    if (!lotsMap) {
-                        lotsMap = L.map('lotsMap');
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            maxZoom: 18,
-                            attribution: '&copy; OpenStreetMap contributors'
-                        }).addTo(lotsMap);
-                    }
-                    if (lotsLayerGroup) {
-                        lotsMap.removeLayer(lotsLayerGroup);
-                    }
-                    if (territory.geojson && territory.geojson.features) {
-                        territory.geojson.features.forEach((feat, index) => {
-                            if (!feat.properties) {
-                                feat.properties = {};
-                            }
-                            feat.properties.index = index;
-                        });
-                    }
-                    lotsLayerGroup = L.geoJSON(territory.geojson, {
-                        style: function(feature) {
-                            var done = feature.properties && feature.properties.done === true;
-                            return {
-                                color: done ? 'green' : 'red',
-                                fillColor: done ? 'green' : 'red',
-                                fillOpacity: 0.5,
-                                weight: 2
-                            };
-                        },
-                        onEachFeature: function(feature, layer) {
-                            layer.on('click', function() {
-                                var currentDone = feature.properties && feature.properties.done === true;
-                                var newDone = !currentDone;
-                                var newColor = newDone ? 'green' : 'red';
-                                layer.setStyle({ color: newColor, fillColor: newColor });
-                                fetch('/territories/' + territoryId + '/lots/' + feature.properties.index, {
-                                    method: 'PUT',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({ done: newDone })
-                                })
-                                    .then(res => res.json())
-                                    .then(result => {
-                                        feature.properties.done = newDone;
-                                        if (result.status !== territory.status) {
-                                            territory.status = result.status;
-                                            var rows = document.querySelectorAll('#territoriesTable tbody tr');
-                                            rows.forEach(row => {
-                                                var idCell = row.cells[0];
-                                                var statusCell = row.cells[3];
-                                                if (idCell && idCell.innerText == territoryId) {
-                                                    statusCell.innerText = territory.status ? 'Completo' : 'Incompleto';
-                                                }
-                                            });
-                                            var color = 'red';
-                                            if (territory.status) {
-                                                if (result.updated_at) {
-                                                    var updatedDate = new Date(result.updated_at);
-                                                    var sixMonthsAgo = new Date();
-                                                    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-                                                    if (updatedDate > sixMonthsAgo) {
-                                                        color = 'green';
-                                                    }
-                                                } else {
-                                                    color = 'red';
-                                                }
-                                            }
-                                            if (mainLayers[territoryId]) {
-                                                mainLayers[territoryId].setStyle({ color: color, fillColor: color });
-                                            }
-                                        }
-                                        territory.updated_at = result.updated_at;
-                                    })
-                                    .catch(err => {
-                                        console.error(err);
-                                    });
-                            });
-                        }
-                    }).addTo(lotsMap);
-                    lotsMap.fitBounds(lotsLayerGroup.getBounds());
-                    lotsMap.invalidateSize();
-                });
+  const mapAll = L.map('territoriesMap').setView([-6.530128, -49.851721], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapAll);
+
+  const palette = ['#e6194b','#3cb44b','#ffe119','#4363d8','#f58231','#911eb4','#46f0f0','#f032e6','#bcf60c'];
+  const zoneColors = {};
+
+  fetch('/api/territories')
+    .then(r => r.json())
+    .then(data => {
+      data.forEach(t => {
+        if (!zoneColors[t.zone]) {
+          const idx = Object.keys(zoneColors).length % palette.length;
+          zoneColors[t.zone] = palette[idx];
         }
+      });
+      const features = data.map(t => ({
+        type: 'Feature',
+        geometry: t.geojson.geometry || t.geojson,
+        properties: { number: t.number, zone: t.zone }
+      }));
+      L.geoJSON(features, {
+        style: f => ({
+          color: zoneColors[f.properties.zone],
+          weight: 2,
+          fillOpacity: 0.4
+        }),
+        onEachFeature: (f, layer) => {
+          const c = layer.getBounds().getCenter();
+          L.marker(c, {
+            icon: L.divIcon({
+              className: 'zone-label',
+              html: `<span style="
+                background: rgba(255,255,255,0.8);
+                padding: 2px 6px;
+                border-radius: 4px;
+                color: ${zoneColors[f.properties.zone]};
+                font-weight: 600;
+              ">${f.properties.number}</span>`,
+              iconSize: [0,0]
+            })
+          }).addTo(mapAll);
+        }
+      }).addTo(mapAll);
+    });
 
-        document.getElementById('closeModal').addEventListener('click', function() {
-            document.getElementById('lotsModal').style.display = 'none';
+  const table = $('#territoriesTable').DataTable({
+    ajax: { url: '/api/territories', dataSrc: '' },
+    columns: [
+      { data: 'number' },
+      { data: 'zone' },
+      {
+        data: null, orderable: false,
+        render: (_,__,r) =>
+          `<button class="bx bx-edit edit" data-id="${r.id}"></button>
+           <button class="bx bx-trash delete" data-id="${r.id}"></button>`
+      }
+    ],
+    language: { url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json' }
+  });
+
+  let drawMaps = {}, drawLayers = {};
+  function initDraw(mapId){
+    if(drawMaps[mapId]){
+      drawMaps[mapId].remove();
+      delete drawMaps[mapId];
+      delete drawLayers[mapId];
+    }
+    const m = L.map(mapId).setView([-6.530128, -49.851721], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+    const fg = new L.FeatureGroup();
+    m.addLayer(fg);
+    m.addControl(new L.Control.Draw({
+      draw: { polyline:false, rectangle:false, circle:false, marker:false, circlemarker:false, polygon:{ allowIntersection:false } },
+      edit: { featureGroup: fg }
+    }));
+    m.on(L.Draw.Event.CREATED, e => fg.addLayer(e.layer));
+    drawMaps[mapId] = m;
+    drawLayers[mapId] = fg;
+    return fg;
+  }
+
+  let addDrawn, editDrawn;
+  $('#addTerritoryBtn').click(()=>{
+    $('#addModal').addClass('active');
+    setTimeout(()=>{
+      addDrawn = initDraw('drawMap');
+      drawMaps['drawMap'].invalidateSize();
+    }, 300);
+  });
+  $('#addClose').click(()=>$('#addModal').removeClass('active'));
+
+  $('#saveAddTerritory').click(()=>{
+    const geo = drawLayers['drawMap'].toGeoJSON();
+    const payload = {
+      number: parseInt($('#addNumber').val(),10),
+      zone: $('#addZone').val(),
+      geojson: geo
+    };
+    $.ajax({
+      url: '/api/territories',
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify(payload),
+      success: ()=>{
+        $('#addModal').removeClass('active');
+        table.ajax.reload();
+        mapAll.eachLayer(l=> l instanceof L.GeoJSON && mapAll.removeLayer(l));
+        fetch('/api/territories')
+          .then(r=>r.json())
+          .then(data=> L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
+      }
+    });
+  });
+
+  $('#territoriesTable').on('click','.edit', function(){
+    const id = $(this).data('id');
+    $.getJSON(`/api/territories/${id}`, d=>{
+      $('#editNumber').val(d.number);
+      $('#editZone').val(d.zone);
+      $('#editModal').addClass('active');
+      setTimeout(()=>{
+        editDrawn = initDraw('editDrawMap');
+        L.geoJSON(d.geojson).eachLayer(l=> drawLayers['editDrawMap'].addLayer(l));
+        drawMaps['editDrawMap'].invalidateSize();
+      }, 300);
+      $('#saveEditTerritory').off('click').on('click', ()=>{
+        const geo2 = drawLayers['editDrawMap'].toGeoJSON();
+        const p = {
+          number: parseInt($('#editNumber').val(),10),
+          zone: $('#editZone').val(),
+          geojson: geo2
+        };
+        $.ajax({
+          url: `/api/territories/${id}`,
+          method: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify(p),
+          success: ()=>{
+            $('#editModal').removeClass('active');
+            table.ajax.reload();
+            mapAll.eachLayer(l=> l instanceof L.GeoJSON && mapAll.removeLayer(l));
+            fetch('/api/territories')
+              .then(r=>r.json())
+              .then(data=> L.geoJSON(data.map(t=>t.geojson)).addTo(mapAll));
+          }
         });
-    </script>
+      });
+    });
+  });
+  $('#editClose').click(()=>$('#editModal').removeClass('active'));
+
+  $('#territoriesTable').on('click','.delete', function(){
+    const id = $(this).data('id');
+    if(confirm('Confirma exclusão?')){
+      $.ajax({ url:`/api/territories/${id}`, method:'DELETE', success: ()=>table.ajax.reload() });
+    }
+  });
+
+  $('#logoutBtn, #logoutBtn2').click(e=>{
+    e.preventDefault();
+    fetch('/logout',{method:'POST'}).then(()=>location.href='/');
+  });
+  $('.menu-toggle').click(()=>$('.sidebar').toggleClass('active'));
+  $('#profileBtn').click(()=>$('#profile').toggleClass('active'));
+  $(document).click(e=>{
+    if(!$('#profile').is(e.target) && $('#profile').has(e.target).length===0){
+      $('#profile').removeClass('active');
+    }
+  });
+});
+</script>
+
+
+
 </body>
 </html>
