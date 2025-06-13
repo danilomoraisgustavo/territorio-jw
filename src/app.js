@@ -6,6 +6,7 @@ const path = require('path');
 const { Pool } = require('pg');
 const isAuthenticated = require('./middlewares/isAuthenticated');
 const territoryRoutes = require('./routes/territoryRoutes');
+const lotRoutes = require('./routes/lotRoutes');
 
 
 const config = require('./config');
@@ -53,6 +54,7 @@ app.use('/',            authRoutes);
 app.use('/api/users',   userRoutes);
 app.use('/api/password', passwordRoutes);
 app.use('/api/territories', territoryRoutes);
+app.use('/api', lotRoutes);
 
 // *** fallback 404 (deve vir por último) ***
 app.use((req, res) => {
