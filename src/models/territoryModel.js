@@ -36,7 +36,7 @@ async function update(id, { number, zone, geojson }) {
   `;
   return await dbGet(sql, [number, zone, geojson, id]);
 }
-a
+
 async function deleteById(id) {
   await dbRun(
     'DELETE FROM territories WHERE id = $1',
