@@ -1,32 +1,53 @@
-// src/services/territoryService.js
 const territoryModel = require('../models/territoryModel');
 
-async function listTerritories() {
-  return await territoryModel.getAll();
+async function getAllTerritories() {
+    return await territoryModel.getAllTerritories();
 }
 
 async function getTerritory(id) {
-  const t = await territoryModel.getById(id);
-  if (!t) throw new Error('Território não encontrado');
-  return t;
+    return await territoryModel.getTerritoryById(id);
 }
 
-async function createTerritory(data) {
-  return await territoryModel.create(data);
-}
-
-async function updateTerritory(id, data) {
-  return await territoryModel.update(id, data);
-}
-
-async function deleteTerritory(id) {
-  await territoryModel.deleteById(id);
+async function updateLotStatus(id, lotIndex, doneStatus) {
+    const territory = await territoryModel.getTerritoryById(id);
+    if (!territory) {
+        throw new Error('Territory not found');
+    }
+    let geojson = territory.geojson;
+    if (typeof geojson === 'string') {
+        geojson = JSON.parse(geojson);
+    }
+    if (!geojson || !geojson.features || geojson.features.length <= lotIndex) {
+        throw new Error('Invalid lot index');
+    }
+    const feature = geojson.features[lotIndex];
+    if (!feature.properties) {
+        feature.properties = {};
+    }
+    const currentDone = feature.properties.done === true;
+    const newDone = (doneStatus !== undefined) ? doneStatus : !currentDone;
+    feature.properties.done = newDone;
+    let allDone = true;
+    for (const f of geojson.features) {
+        if (!f.properties || f.properties.done !== true) {
+            allDone = false;
+            break;
+        }
+    }
+    const newStatus = allDone ? true : false;
+    let updatedAt = territory.updated_at;
+    if (newDone === true) {
+        updatedAt = new Date();
+    }
+    await territoryModel.updateTerritory(id, geojson, newStatus, updatedAt);
+    return {
+        status: newStatus,
+        updated_at: updatedAt
+    };
 }
 
 module.exports = {
-  listTerritories,
-  getTerritory,
-  createTerritory,
-  updateTerritory,
-  deleteTerritory
+    getAllTerritories,
+    getTerritory,
+    updateLotStatus
 };

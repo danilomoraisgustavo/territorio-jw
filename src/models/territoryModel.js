@@ -1,53 +1,25 @@
-// src/models/territoryModel.js
-const { dbGet, dbAll, dbRun } = require('../utils/db');
+const pool = require('../db');
 
-async function getAll() {
-  return await dbAll(
-    'SELECT id, number, zone, geojson FROM territories',
-    []
-  );
+async function getAllTerritories() {
+    const result = await pool.query('SELECT id, number, zone, geojson, status, updated_at FROM territories');
+    return result.rows;
 }
 
-async function getById(id) {
-  return await dbGet(
-    'SELECT id, number, zone, geojson FROM territories WHERE id = $1',
-    [id]
-  );
+async function getTerritoryById(id) {
+    const result = await pool.query('SELECT id, number, zone, geojson, status, updated_at FROM territories WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+        return null;
+    }
+    return result.rows[0];
 }
 
-async function create({ number, zone, geojson }) {
-  const sql = `
-    INSERT INTO territories (number, zone, geojson)
-    VALUES ($1, $2, $3)
-    RETURNING id, number, zone, geojson
-  `;
-  return await dbGet(sql, [number, zone, geojson]);
-}
-
-async function update(id, { number, zone, geojson }) {
-  const sql = `
-    UPDATE territories
-    SET number = $1,
-        zone   = $2,
-        geojson = $3,
-        updated_at = NOW()
-    WHERE id = $4
-    RETURNING id, number, zone, geojson
-  `;
-  return await dbGet(sql, [number, zone, geojson, id]);
-}
-
-async function deleteById(id) {
-  await dbRun(
-    'DELETE FROM territories WHERE id = $1',
-    [id]
-  );
+async function updateTerritory(id, geojson, status, updatedAt) {
+    await pool.query('UPDATE territories SET geojson = $1, status = $2, updated_at = $3 WHERE id = $4', [JSON.stringify(geojson), status, updatedAt, id]);
+    return true;
 }
 
 module.exports = {
-  getAll,
-  getById,
-  create,
-  update,
-  deleteById
+    getAllTerritories,
+    getTerritoryById,
+    updateTerritory
 };
