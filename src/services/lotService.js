@@ -1,10 +1,10 @@
 // src/services/lotService.js
-const lotModel       = require('../models/lotModel');
+const { dbRun } = require('../utils/db');
+const lotModel = require('../models/lotModel');
 const territoryService = require('./territoryService');
 
 async function listLotsByTerritory(territoryId) {
-  // reset stale >6mo
-  await lotModel.dbRun(
+  await dbRun(
     `UPDATE lots
      SET status = FALSE
      WHERE updated_at < NOW() - INTERVAL '6 months'`
@@ -13,7 +13,7 @@ async function listLotsByTerritory(territoryId) {
 }
 
 async function listAllLots() {
-  await lotModel.dbRun(
+  await dbRun(
     `UPDATE lots
      SET status = FALSE
      WHERE updated_at < NOW() - INTERVAL '6 months'`
